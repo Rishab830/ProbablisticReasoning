@@ -7,10 +7,53 @@ import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import unary_from_softmax, create_pairwise_bilateral, create_pairwise_gaussian
 import matplotlib.pyplot as plt
 from glob import glob
+import gc
 
 # ============================================================================
 # FEATURE EXTRACTION (Same as before)
 # ============================================================================
+
+def resize_image(image, max_size=512):
+    """Resize regular image (fundus) to reduce memory usage"""
+    height, width = image.shape[:2]
+    if max(height, width) > max_size:
+        scale = max_size / max(height, width)
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        return cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
+    return image
+
+
+def resize_mask(mask, max_size=512):
+    """Resize mask using nearest neighbor to preserve discrete labels"""
+    height, width = mask.shape[:2]
+    if max(height, width) > max_size:
+        scale = max_size / max(height, width)
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        # Use INTER_NEAREST to avoid creating intermediate values
+        resized = cv2.resize(mask, (new_width, new_height), 
+                           interpolation=cv2.INTER_NEAREST)
+        return resized
+    return mask
+
+def remap_mask_labels(mask):
+    """
+    Remap mask values to exactly 0, 128, or 255
+    Useful when interpolation creates intermediate values
+    """
+    output = np.zeros_like(mask)
+    
+    # Map values closer to 0 -> 0 (disc)
+    # Map values closer to 128 -> 128 (cup)  
+    # Map values closer to 255 -> 255 (background)
+    
+    output[mask < 64] = 0          # 0-63 -> 0
+    output[(mask >= 64) & (mask < 192)] = 128  # 64-191 -> 128
+    output[mask >= 192] = 255      # 192-255 -> 255
+    
+    return output
+
 
 def normalize_fundus_image(image):
     """
@@ -105,46 +148,90 @@ def extract_features_with_coords(image, normalize_coords=True,
 # TRAINING (Same as before)
 # ============================================================================
 
-def train_naive_bayes(fundus_images, mask_images, use_both_colorspaces=True):
-    """Train Gaussian Naive Bayes classifier"""
-    print("Extracting features from training images...")
-    X_train = []
-    y_train = []
+def train_naive_bayes_memory_efficient(fundus_files, mask_files, 
+                                       use_both_colorspaces=True, 
+                                       batch_size=5, max_size=512):
     
-    for i, (fundus, mask) in enumerate(zip(fundus_images, mask_images)):
-        print(f"Processing training image {i+1}/{len(fundus_images)}...")
-        
-        features = extract_features_with_coords(
-            fundus, 
-            normalize_coords=True,
-            use_both_colorspaces=use_both_colorspaces
-        )
-        labels = mask.flatten()
-        
-        X_train.append(features)
-        y_train.append(labels)
-    
-    X_train = np.vstack(X_train)
-    y_train = np.concatenate(y_train)
-    
-    print(f"Total training samples: {X_train.shape[0]}")
-    
-    # Standardize features
+    print("Training with memory-efficient batching...")
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    
-    # Train classifier
-    print("Training Naive Bayes classifier...")
     clf = GaussianNB()
-    clf.fit(X_train_scaled, y_train)
+    
+    # Process in batches
+    n_batches = (len(fundus_files) + batch_size - 1) // batch_size
+    
+    for batch_idx in range(n_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min(start_idx + batch_size, len(fundus_files))
+        
+        print(f"Processing batch {batch_idx + 1}/{n_batches} (images {start_idx}-{end_idx})...")
+        
+        X_batch = []
+        y_batch = []
+        
+        for i in range(start_idx, end_idx):
+            # Load images
+            fundus = cv2.imread(fundus_files[i])
+            mask = cv2.imread(mask_files[i], cv2.IMREAD_GRAYSCALE)
+            
+            if fundus is None or mask is None:
+                continue
+            
+            # Resize - use different methods for fundus and mask
+            fundus = resize_image(fundus, max_size=max_size)
+            mask = resize_mask(mask, max_size=max_size)  # Use INTER_NEAREST
+            
+            # CRITICAL: Remap mask values to ensure only 0, 128, 255
+            mask = remap_mask_labels(mask)
+            
+            # Verify mask only contains valid labels
+            unique_labels = np.unique(mask)
+            print(f"  Image {i}: Mask labels = {unique_labels}")
+            
+            # Extract features
+            features = extract_features_with_coords(
+                fundus, 
+                normalize_coords=True,
+                use_both_colorspaces=use_both_colorspaces
+            )
+            labels = mask.flatten()
+            
+            X_batch.append(features)
+            y_batch.append(labels)
+            
+            # Clear references
+            del fundus, mask
+        
+        if len(X_batch) == 0:
+            continue
+            
+        X_batch = np.vstack(X_batch)
+        y_batch = np.concatenate(y_batch)
+        
+        # Verify labels before training
+        unique_y = np.unique(y_batch)
+        print(f"Batch {batch_idx + 1} unique labels: {unique_y}")
+        
+        # Partial fit for incremental learning
+        if batch_idx == 0:
+            # First batch: fit scaler and get all classes
+            X_batch_scaled = scaler.fit_transform(X_batch)
+            clf.partial_fit(X_batch_scaled, y_batch, classes=np.array([0, 128, 255]))
+        else:
+            X_batch_scaled = scaler.transform(X_batch)
+            clf.partial_fit(X_batch_scaled, y_batch)
+        
+        # Clear batch data
+        del X_batch, y_batch, X_batch_scaled
+        gc.collect()
     
     return clf, scaler
+
+
 
 
 # ============================================================================
 # CRF REFINEMENT FUNCTIONS
 # ============================================================================
-
 def get_probability_map(clf, scaler, image, use_both_colorspaces=True):
     """
     Get probability map from Naive Bayes classifier
@@ -412,58 +499,157 @@ def visualize_crf_comparison(original, naive_mask, crf_mask, gt_mask=None, save_
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
 
 
+def save_comparison_metrics_as_image(metrics_nb, metrics_crf, image_name, save_path):
+    """
+    Save comparison of Naive Bayes and CRF metrics as an image
+    
+    Parameters:
+    -----------
+    metrics_nb : dict
+        Naive Bayes metrics
+    metrics_crf : dict
+        CRF metrics
+    image_name : str
+        Name of the image
+    save_path : str
+        Path to save the image
+    """
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Calculate improvements
+    improvements = {
+        key: metrics_crf[key] - metrics_nb[key] 
+        for key in metrics_nb.keys()
+    }
+    
+    # Prepare data
+    metrics_data = [
+        ['Metric', 'Naive Bayes', 'With CRF', 'Improvement'],
+        ['Accuracy', 
+         f"{metrics_nb['accuracy']:.4f}",
+         f"{metrics_crf['accuracy']:.4f}",
+         f"{improvements['accuracy']:+.4f}"],
+        ['Dice - Disc', 
+         f"{metrics_nb['dice_disc']:.4f}",
+         f"{metrics_crf['dice_disc']:.4f}",
+         f"{improvements['dice_disc']:+.4f}"],
+        ['Dice - Cup', 
+         f"{metrics_nb['dice_cup']:.4f}",
+         f"{metrics_crf['dice_cup']:.4f}",
+         f"{improvements['dice_cup']:+.4f}"],
+        ['Dice - Background', 
+         f"{metrics_nb['dice_background']:.4f}",
+         f"{metrics_crf['dice_background']:.4f}",
+         f"{improvements['dice_background']:+.4f}"],
+        ['Mean Dice', 
+         f"{metrics_nb['dice_mean']:.4f}",
+         f"{metrics_crf['dice_mean']:.4f}",
+         f"{improvements['dice_mean']:+.4f}"]
+    ]
+    
+    # Create table
+    table = ax.table(cellText=metrics_data,
+                     cellLoc='center',
+                     loc='center',
+                     colWidths=[0.35, 0.25, 0.25, 0.25])
+    
+    # Style
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1, 2.5)
+    
+    # Header styling
+    for i in range(4):
+        table[(0, i)].set_facecolor('#2196F3')
+        table[(0, i)].set_text_props(weight='bold', color='white')
+    
+    # Color improvement column
+    for i in range(1, len(metrics_data)):
+        improvement_val = float(metrics_data[i][3])
+        if improvement_val > 0:
+            table[(i, 3)].set_facecolor('#c8e6c9')  # Light green
+        elif improvement_val < 0:
+            table[(i, 3)].set_facecolor('#ffcdd2')  # Light red
+        
+        # Alternate other columns
+        if i % 2 == 0:
+            for j in range(3):
+                table[(i, j)].set_facecolor('#f5f5f5')
+    
+    plt.title(f'Metrics Comparison - {image_name}',
+              fontsize=16, fontweight='bold', pad=20)
+    
+    plt.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.close()
+
+
+
 # ============================================================================
 # MAIN PIPELINE
 # ============================================================================
 
 def main():
-    """Main execution pipeline with CRF"""
+    """Memory-efficient main execution pipeline"""
+    import gc
     
     # Configuration
     TRAIN_FUNDUS_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Training400\\Glaucoma'
     TRAIN_MASK_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Disc_Cup_Masks\\Glaucoma'
     TEST_FUNDUS_DIR = 'REFUGE2\\Test\\refuge2-test'
-    TEST_MASK_DIR = 'REFUGE2\\Test\\Disc_Mask'  # Optional, for evaluation
+    TEST_MASK_DIR = 'REFUGE2\\Test\\Disc_Mask'
     OUTPUT_DIR = 'NormalizedCRFOutput'
     
     USE_BOTH_COLORSPACES = True
     APPLY_CRF = True
     
-    # CRF parameters (tune these for best results)
+    # MEMORY OPTIMIZATION SETTINGS
+    MAX_IMAGE_SIZE = 512  # Resize images to max 512x512
+    BATCH_SIZE = 3        # Process 3 images at a time
+    MAX_TRAIN_IMAGES = 20 # Reduce training images
+    MAX_TEST_IMAGES = 10   # Reduce test images
+    
+    # CRF parameters - REDUCED for memory efficiency
     CRF_PARAMS = {
-        'n_iters': 10,              # More iterations = smoother results
-        'sxy_gaussian': 3,          # Spatial smoothness
-        'compat_gaussian': 3,       # Gaussian compatibility
-        'sxy_bilateral': 80,        # Bilateral spatial (larger = more spatial smoothing)
-        'srgb_bilateral': 13,       # Bilateral color (smaller = only similar colors grouped)
-        'compat_bilateral': 10      # Bilateral compatibility
+        'n_iters': 5,              # Reduced iterations
+        'sxy_gaussian': 3,
+        'compat_gaussian': 3,
+        'sxy_bilateral': 60,       # Reduced
+        'srgb_bilateral': 10,      # Reduced
+        'compat_bilateral': 10
     }
     
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # ========== TRAINING ==========
     print("="*60)
-    print("TRAINING PHASE")
+    print("TRAINING PHASE (MEMORY EFFICIENT)")
     print("="*60)
     
-    fundus_files = sorted(glob(os.path.join(TRAIN_FUNDUS_DIR, '*.*')))[:20]
-    mask_files = sorted(glob(os.path.join(TRAIN_MASK_DIR, '*.*')))[:20]
+    fundus_files = sorted(glob(os.path.join(TRAIN_FUNDUS_DIR, '*.*')))[:MAX_TRAIN_IMAGES]
+    mask_files = sorted(glob(os.path.join(TRAIN_MASK_DIR, '*.*')))[:MAX_TRAIN_IMAGES]
     
-    fundus_train = [cv2.imread(f) for f in fundus_files]
-    masks_train = [cv2.imread(f, cv2.IMREAD_GRAYSCALE) for f in mask_files]
+    # Use memory-efficient training
+    clf, scaler = train_naive_bayes_memory_efficient(
+        fundus_files, mask_files,
+        use_both_colorspaces=USE_BOTH_COLORSPACES,
+        batch_size=BATCH_SIZE,
+        max_size=MAX_IMAGE_SIZE
+    )
     
-    clf, scaler = train_naive_bayes(fundus_train, masks_train, 
-                                    use_both_colorspaces=USE_BOTH_COLORSPACES)
+    # Clear memory after training
+    gc.collect()
     
     # ========== TESTING ==========
     print("\n" + "="*60)
     print("TESTING PHASE WITH CRF REFINEMENT")
     print("="*60)
     
-    test_files = sorted(glob(os.path.join(TEST_FUNDUS_DIR, '*.*')))[:10]
+    test_files = sorted(glob(os.path.join(TEST_FUNDUS_DIR, '*.*')))[:MAX_TEST_IMAGES]
     
-    metrics_nb = []   # Naive Bayes metrics
-    metrics_crf = []  # CRF metrics
+    metrics_nb = []
+    metrics_crf = []
     
     for i, test_file in enumerate(test_files):
         print(f"\nProcessing test image {i+1}/{len(test_files)}: {os.path.basename(test_file)}")
@@ -471,6 +657,9 @@ def main():
         test_image = cv2.imread(test_file)
         if test_image is None:
             continue
+        
+        # RESIZE TEST IMAGE
+        test_image = resize_image(test_image, max_size=MAX_IMAGE_SIZE)
         
         # Predict with CRF
         crf_mask, nb_mask = predict_with_crf(
@@ -482,10 +671,12 @@ def main():
         
         # Evaluate if ground truth exists
         test_basename = os.path.basename(test_file)
+        base_name = os.path.splitext(test_basename)[0]
         gt_file = os.path.join(TEST_MASK_DIR, test_basename[:-3]+'png')
         
         if os.path.exists(gt_file):
             gt_mask = cv2.imread(gt_file, cv2.IMREAD_GRAYSCALE)
+            gt_mask = resize_image(gt_mask, max_size=MAX_IMAGE_SIZE)
             
             # Evaluate both methods
             metrics_nb_img = evaluate_segmentation(nb_mask, gt_mask)
@@ -501,16 +692,24 @@ def main():
             print(f"\nWith CRF:")
             print(f"  Accuracy: {metrics_crf_img['accuracy']:.4f}")
             print(f"  Mean Dice: {metrics_crf_img['dice_mean']:.4f}")
-            print(f"  Improvement: {(metrics_crf_img['dice_mean'] - metrics_nb_img['dice_mean']):.4f}")
+            
+            # Save comparison metrics
+            comparison_path = os.path.join(OUTPUT_DIR, f"{base_name}_metrics_comparison.png")
+            save_comparison_metrics_as_image(metrics_nb_img, metrics_crf_img, 
+                                            base_name, comparison_path)
         else:
             gt_mask = None
-        
-        # Save results
-        base_name = os.path.splitext(test_basename)[0]
         
         # Visualize comparison
         viz_path = os.path.join(OUTPUT_DIR, f"{base_name}_comparison.png")
         visualize_crf_comparison(test_image, nb_mask, crf_mask, gt_mask, viz_path)
+        
+        # IMPORTANT: Close figure and clear memory after each image
+        plt.close('all')
+        del test_image, crf_mask, nb_mask
+        if gt_mask is not None:
+            del gt_mask
+        gc.collect()
     
     # ========== SUMMARY ==========
     if metrics_crf:
@@ -529,6 +728,30 @@ def main():
         improvement = (np.mean([m['dice_mean'] for m in metrics_crf]) - 
                       np.mean([m['dice_mean'] for m in metrics_nb]))
         print(f"\nOverall Dice Improvement: {improvement:.4f}")
+        
+        # Create overall summary
+        avg_metrics_nb = {
+            'accuracy': np.mean([m['accuracy'] for m in metrics_nb]),
+            'dice_disc': np.mean([m['dice_disc'] for m in metrics_nb]),
+            'dice_cup': np.mean([m['dice_cup'] for m in metrics_nb]),
+            'dice_background': np.mean([m['dice_background'] for m in metrics_nb]),
+            'dice_mean': np.mean([m['dice_mean'] for m in metrics_nb])
+        }
+        
+        avg_metrics_crf = {
+            'accuracy': np.mean([m['accuracy'] for m in metrics_crf]),
+            'dice_disc': np.mean([m['dice_disc'] for m in metrics_crf]),
+            'dice_cup': np.mean([m['dice_cup'] for m in metrics_crf]),
+            'dice_background': np.mean([m['dice_background'] for m in metrics_crf]),
+            'dice_mean': np.mean([m['dice_mean'] for m in metrics_crf])
+        }
+        
+        summary_path = os.path.join(OUTPUT_DIR, "overall_metrics_summary.png")
+        save_comparison_metrics_as_image(avg_metrics_nb, avg_metrics_crf,
+                                        "Overall Average", summary_path)
+        
+        print(f"\nMetrics images saved to: {OUTPUT_DIR}")
+
 
 
 if __name__ == "__main__":
