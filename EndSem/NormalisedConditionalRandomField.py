@@ -4,13 +4,14 @@ import os
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 import pydensecrf.densecrf as dcrf
-from pydensecrf.utils import unary_from_softmax, create_pairwise_bilateral, create_pairwise_gaussian
+from pydensecrf.utils import unary_from_softmax
 import matplotlib.pyplot as plt
 from glob import glob
 import gc
 
+
 # ============================================================================
-# FEATURE EXTRACTION (Same as before)
+# MEMORY OPTIMIZATION FUNCTIONS
 # ============================================================================
 
 def resize_image(image, max_size=512):
@@ -31,68 +32,24 @@ def resize_mask(mask, max_size=512):
         scale = max_size / max(height, width)
         new_width = int(width * scale)
         new_height = int(height * scale)
-        # Use INTER_NEAREST to avoid creating intermediate values
         resized = cv2.resize(mask, (new_width, new_height), 
                            interpolation=cv2.INTER_NEAREST)
         return resized
     return mask
 
+
 def remap_mask_labels(mask):
-    """
-    Remap mask values to exactly 0, 128, or 255
-    Useful when interpolation creates intermediate values
-    """
+    """Remap mask values to exactly 0, 128, or 255"""
     output = np.zeros_like(mask)
-    
-    # Map values closer to 0 -> 0 (disc)
-    # Map values closer to 128 -> 128 (cup)  
-    # Map values closer to 255 -> 255 (background)
-    
-    output[mask < 64] = 0          # 0-63 -> 0
-    output[(mask >= 64) & (mask < 192)] = 128  # 64-191 -> 128
-    output[mask >= 192] = 255      # 192-255 -> 255
-    
+    output[mask < 64] = 0
+    output[(mask >= 64) & (mask < 192)] = 128
+    output[mask >= 192] = 255
     return output
 
 
-def normalize_fundus_image(image):
-    """
-    Normalize fundus image using CLAHE and illumination correction
-    """
-    # Convert to LAB color space for better illumination handling
-    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    
-    # Apply CLAHE to L channel for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    l_clahe = clahe.apply(l)
-    
-    # Merge and convert back
-    lab_clahe = cv2.merge([l_clahe, a, b])
-    normalized = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
-    
-    return normalized
-
-
-def normalize_illumination(image):
-    """
-    Correct uneven illumination in fundus images
-    """
-    # Process each channel separately
-    normalized_channels = []
-    for i in range(3):
-        channel = image[:, :, i].astype(np.float32)
-        
-        # Estimate background using large Gaussian blur
-        background = cv2.GaussianBlur(channel, (0, 0), sigmaX=50)
-        
-        # Subtract background and rescale
-        corrected = channel - background + 128
-        corrected = np.clip(corrected, 0, 255).astype(np.uint8)
-        normalized_channels.append(corrected)
-    
-    return cv2.merge(normalized_channels)
-
+# ============================================================================
+# FEATURE EXTRACTION
+# ============================================================================
 
 def extract_features_with_coords(image, normalize_coords=True, 
                                  use_both_colorspaces=True, 
@@ -100,30 +57,25 @@ def extract_features_with_coords(image, normalize_coords=True,
     """Extract color and spatial features from fundus image"""
     height, width = image.shape[:2]
     
-    # Extract RGB features
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     rgb_features = image_rgb.reshape(-1, 3).astype(np.float32)
     
-    # Normalize RGB to [0, 1] range
     if normalize_colors:
         rgb_features = rgb_features / 255.0
     
     if use_both_colorspaces:
-        # Extract HSV features
         image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         hsv_features = image_hsv.reshape(-1, 3).astype(np.float32)
         
-        # Normalize HSV: H to [0,1], S to [0,1], V to [0,1]
         if normalize_colors:
-            hsv_features[:, 0] = hsv_features[:, 0] / 180.0  # H: 0-180
-            hsv_features[:, 1] = hsv_features[:, 1] / 255.0  # S: 0-255
-            hsv_features[:, 2] = hsv_features[:, 2] / 255.0  # V: 0-255
+            hsv_features[:, 0] = hsv_features[:, 0] / 180.0
+            hsv_features[:, 1] = hsv_features[:, 1] / 255.0
+            hsv_features[:, 2] = hsv_features[:, 2] / 255.0
         
         color_features = np.hstack([rgb_features, hsv_features])
     else:
         color_features = rgb_features
     
-    # Create coordinate grids (keep as before)
     if normalize_coords:
         y_coords, x_coords = np.meshgrid(
             np.linspace(0, 1, height),
@@ -138,56 +90,46 @@ def extract_features_with_coords(image, normalize_coords=True,
     x_features = x_coords.flatten().reshape(-1, 1)
     y_features = y_coords.flatten().reshape(-1, 1)
     
-    # Combine all features
     all_features = np.hstack([color_features, x_features, y_features])
     
     return all_features
 
 
 # ============================================================================
-# TRAINING (Same as before)
+# MEMORY-EFFICIENT TRAINING
 # ============================================================================
 
 def train_naive_bayes_memory_efficient(fundus_files, mask_files, 
                                        use_both_colorspaces=True, 
                                        batch_size=5, max_size=512):
-    
+    """Memory-efficient training with batching"""
     print("Training with memory-efficient batching...")
     scaler = StandardScaler()
     clf = GaussianNB()
     
-    # Process in batches
     n_batches = (len(fundus_files) + batch_size - 1) // batch_size
     
     for batch_idx in range(n_batches):
         start_idx = batch_idx * batch_size
         end_idx = min(start_idx + batch_size, len(fundus_files))
         
-        print(f"Processing batch {batch_idx + 1}/{n_batches} (images {start_idx}-{end_idx})...")
+        print(f"Processing batch {batch_idx + 1}/{n_batches} (images {start_idx+1}-{end_idx})...")
         
         X_batch = []
         y_batch = []
         
         for i in range(start_idx, end_idx):
-            # Load images
             fundus = cv2.imread(fundus_files[i])
             mask = cv2.imread(mask_files[i], cv2.IMREAD_GRAYSCALE)
             
             if fundus is None or mask is None:
+                print(f"  Warning: Could not load image pair {i+1}")
                 continue
             
-            # Resize - use different methods for fundus and mask
             fundus = resize_image(fundus, max_size=max_size)
-            mask = resize_mask(mask, max_size=max_size)  # Use INTER_NEAREST
-            
-            # CRITICAL: Remap mask values to ensure only 0, 128, 255
+            mask = resize_mask(mask, max_size=max_size)
             mask = remap_mask_labels(mask)
             
-            # Verify mask only contains valid labels
-            unique_labels = np.unique(mask)
-            print(f"  Image {i}: Mask labels = {unique_labels}")
-            
-            # Extract features
             features = extract_features_with_coords(
                 fundus, 
                 normalize_coords=True,
@@ -198,65 +140,48 @@ def train_naive_bayes_memory_efficient(fundus_files, mask_files,
             X_batch.append(features)
             y_batch.append(labels)
             
-            # Clear references
             del fundus, mask
         
         if len(X_batch) == 0:
+            print(f"  Skipping batch {batch_idx + 1} - no valid images")
             continue
             
         X_batch = np.vstack(X_batch)
         y_batch = np.concatenate(y_batch)
         
-        # Verify labels before training
-        unique_y = np.unique(y_batch)
-        print(f"Batch {batch_idx + 1} unique labels: {unique_y}")
+        print(f"  Batch samples: {X_batch.shape[0]}, Features: {X_batch.shape[1]}")
         
-        # Partial fit for incremental learning
         if batch_idx == 0:
-            # First batch: fit scaler and get all classes
             X_batch_scaled = scaler.fit_transform(X_batch)
             clf.partial_fit(X_batch_scaled, y_batch, classes=np.array([0, 128, 255]))
         else:
             X_batch_scaled = scaler.transform(X_batch)
             clf.partial_fit(X_batch_scaled, y_batch)
         
-        # Clear batch data
         del X_batch, y_batch, X_batch_scaled
         gc.collect()
     
+    print("Training complete!")
     return clf, scaler
 
 
-
-
 # ============================================================================
-# CRF REFINEMENT FUNCTIONS
+# CRF FUNCTIONS
 # ============================================================================
+
 def get_probability_map(clf, scaler, image, use_both_colorspaces=True):
-    """
-    Get probability map from Naive Bayes classifier
-    
-    Returns:
-    --------
-    probabilities : numpy array
-        Shape (n_classes, height, width) with probability for each class
-    """
+    """Get probability map from Naive Bayes classifier"""
     height, width = image.shape[:2]
     
-    # Extract features
     features = extract_features_with_coords(
         image,
         normalize_coords=True,
         use_both_colorspaces=use_both_colorspaces
     )
     
-    # Standardize
     features_scaled = scaler.transform(features)
+    prob = clf.predict_proba(features_scaled)
     
-    # Get probabilities for each class
-    prob = clf.predict_proba(features_scaled)  # Shape: (n_pixels, n_classes)
-    
-    # Reshape to (n_classes, height, width)
     n_classes = prob.shape[1]
     prob = prob.T.reshape(n_classes, height, width)
     
@@ -266,141 +191,58 @@ def get_probability_map(clf, scaler, image, use_both_colorspaces=True):
 def apply_dense_crf(image, probabilities, n_iters=5, 
                     sxy_gaussian=3, compat_gaussian=3,
                     sxy_bilateral=80, srgb_bilateral=13, compat_bilateral=10):
-    """
-    Apply Dense CRF refinement to segmentation probabilities
-    
-    Parameters:
-    -----------
-    image : numpy array
-        Original RGB image (H, W, 3)
-    probabilities : numpy array
-        Class probabilities from classifier (n_classes, H, W)
-    n_iters : int
-        Number of CRF iterations
-    sxy_gaussian : float
-        Spatial standard deviation for Gaussian kernel
-    compat_gaussian : float
-        Compatibility for Gaussian kernel
-    sxy_bilateral : float
-        Spatial standard deviation for bilateral kernel
-    srgb_bilateral : float
-        Color standard deviation for bilateral kernel
-    compat_bilateral : float
-        Compatibility for bilateral kernel
-    
-    Returns:
-    --------
-    refined_mask : numpy array
-        Refined segmentation mask (H, W)
-    """
+    """Apply Dense CRF refinement"""
     height, width = image.shape[:2]
     n_classes = probabilities.shape[0]
     
-    # Create DenseCRF object
     d = dcrf.DenseCRF2D(width, height, n_classes)
     
-    # Set unary potentials (negative log probability)
     unary = unary_from_softmax(probabilities)
     unary = np.ascontiguousarray(unary)
     d.setUnaryEnergy(unary)
     
-    # Create pairwise potentials
-    # 1. Gaussian kernel: encourages nearby pixels to have same label
     d.addPairwiseGaussian(sxy=sxy_gaussian, compat=compat_gaussian,
                           kernel=dcrf.DIAG_KERNEL,
                           normalization=dcrf.NORMALIZE_SYMMETRIC)
     
-    # 2. Bilateral kernel: encourages pixels with similar color and position to have same label
     d.addPairwiseBilateral(sxy=sxy_bilateral, srgb=srgb_bilateral,
                           rgbim=image.astype(np.uint8),
                           compat=compat_bilateral,
                           kernel=dcrf.DIAG_KERNEL,
                           normalization=dcrf.NORMALIZE_SYMMETRIC)
     
-    # Inference
     Q = d.inference(n_iters)
-    
-    # Get MAP (maximum a posteriori) estimate
     map_result = np.argmax(Q, axis=0).reshape((height, width))
     
     return map_result
 
 
 def map_labels_back(crf_output, label_mapping):
-    """
-    Map CRF integer labels back to original mask values (0, 128, 255)
-    
-    Parameters:
-    -----------
-    crf_output : numpy array
-        CRF output with integer labels (0, 1, 2)
-    label_mapping : dict
-        Mapping from integer to original values
-    
-    Returns:
-    --------
-    final_mask : numpy array
-        Mask with original label values
-    """
+    """Map CRF integer labels back to original mask values"""
     final_mask = np.zeros_like(crf_output, dtype=np.uint8)
     for int_label, orig_value in label_mapping.items():
         final_mask[crf_output == int_label] = orig_value
     return final_mask
 
 
-# ============================================================================
-# PREDICTION WITH CRF
-# ============================================================================
-
 def predict_with_crf(clf, scaler, test_image, use_both_colorspaces=True,
                      apply_crf=True, crf_params=None):
-    """
-    Predict segmentation with optional CRF refinement
-    
-    Parameters:
-    -----------
-    clf : GaussianNB
-        Trained classifier
-    scaler : StandardScaler
-        Fitted feature scaler
-    test_image : numpy array
-        Test fundus image
-    use_both_colorspaces : bool
-        Whether to use both RGB and HSV features
-    apply_crf : bool
-        Whether to apply CRF refinement
-    crf_params : dict or None
-        CRF parameters
-    
-    Returns:
-    --------
-    final_mask : numpy array
-        Segmentation mask (with original label values: 0, 128, 255)
-    naive_bayes_mask : numpy array
-        Raw Naive Bayes prediction (before CRF)
-    """
-    # Get probability map from Naive Bayes
+    """Predict segmentation with optional CRF refinement"""
     probabilities = get_probability_map(clf, scaler, test_image, use_both_colorspaces)
     
-    # Get class labels (to map between integer indices and original values)
-    class_labels = clf.classes_  # e.g., [0, 128, 255]
-    label_to_int = {label: i for i, label in enumerate(class_labels)}
+    class_labels = clf.classes_
     int_to_label = {i: label for i, label in enumerate(class_labels)}
     
-    # Naive Bayes prediction (before CRF)
     naive_prediction = np.argmax(probabilities, axis=0)
     naive_bayes_mask = map_labels_back(naive_prediction, int_to_label)
     
     if not apply_crf:
         return naive_bayes_mask, naive_bayes_mask
     
-    # Apply CRF refinement
-    print("Applying Dense CRF refinement...")
+    print("  Applying Dense CRF refinement...")
     
-    # Prepare image in RGB format
     image_rgb = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
     
-    # Set default CRF parameters if not provided
     if crf_params is None:
         crf_params = {
             'n_iters': 5,
@@ -411,10 +253,7 @@ def predict_with_crf(clf, scaler, test_image, use_both_colorspaces=True,
             'compat_bilateral': 10
         }
     
-    # Apply CRF
     crf_output = apply_dense_crf(image_rgb, probabilities, **crf_params)
-    
-    # Map back to original label values
     final_mask = map_labels_back(crf_output, int_to_label)
     
     return final_mask, naive_bayes_mask
@@ -455,76 +294,20 @@ def evaluate_segmentation(pred_mask, gt_mask):
 
 
 # ============================================================================
-# VISUALIZATION
+# METRICS VISUALIZATION
 # ============================================================================
 
-def visualize_crf_comparison(original, naive_mask, crf_mask, gt_mask=None, save_path=None):
-    """Visualize comparison between Naive Bayes and CRF refinement"""
-    if gt_mask is not None:
-        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-        
-        axes[0].imshow(cv2.cvtColor(original, cv2.COLOR_BGR2RGB))
-        axes[0].set_title('Original Image')
-        axes[0].axis('off')
-        
-        axes[1].imshow(gt_mask, cmap='gray')
-        axes[1].set_title('Ground Truth')
-        axes[1].axis('off')
-        
-        axes[2].imshow(naive_mask, cmap='gray')
-        axes[2].set_title('Naive Bayes (Before CRF)')
-        axes[2].axis('off')
-        
-        axes[3].imshow(crf_mask, cmap='gray')
-        axes[3].set_title('After CRF Refinement')
-        axes[3].axis('off')
-    else:
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        
-        axes[0].imshow(cv2.cvtColor(original, cv2.COLOR_BGR2RGB))
-        axes[0].set_title('Original Image')
-        axes[0].axis('off')
-        
-        axes[1].imshow(naive_mask, cmap='gray')
-        axes[1].set_title('Naive Bayes (Before CRF)')
-        axes[1].axis('off')
-        
-        axes[2].imshow(crf_mask, cmap='gray')
-        axes[2].set_title('After CRF Refinement')
-        axes[2].axis('off')
-    
-    plt.tight_layout()
-    
-    if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
-
-
 def save_comparison_metrics_as_image(metrics_nb, metrics_crf, image_name, save_path):
-    """
-    Save comparison of Naive Bayes and CRF metrics as an image
-    
-    Parameters:
-    -----------
-    metrics_nb : dict
-        Naive Bayes metrics
-    metrics_crf : dict
-        CRF metrics
-    image_name : str
-        Name of the image
-    save_path : str
-        Path to save the image
-    """
+    """Save comparison of Naive Bayes and CRF metrics as an image"""
     fig, ax = plt.subplots(figsize=(12, 7))
     ax.axis('tight')
     ax.axis('off')
     
-    # Calculate improvements
     improvements = {
         key: metrics_crf[key] - metrics_nb[key] 
         for key in metrics_nb.keys()
     }
     
-    # Prepare data
     metrics_data = [
         ['Metric', 'Naive Bayes', 'With CRF', 'Improvement'],
         ['Accuracy', 
@@ -549,31 +332,26 @@ def save_comparison_metrics_as_image(metrics_nb, metrics_crf, image_name, save_p
          f"{improvements['dice_mean']:+.4f}"]
     ]
     
-    # Create table
     table = ax.table(cellText=metrics_data,
                      cellLoc='center',
                      loc='center',
                      colWidths=[0.35, 0.25, 0.25, 0.25])
     
-    # Style
     table.auto_set_font_size(False)
     table.set_fontsize(11)
     table.scale(1, 2.5)
     
-    # Header styling
     for i in range(4):
         table[(0, i)].set_facecolor('#2196F3')
         table[(0, i)].set_text_props(weight='bold', color='white')
     
-    # Color improvement column
     for i in range(1, len(metrics_data)):
         improvement_val = float(metrics_data[i][3])
         if improvement_val > 0:
-            table[(i, 3)].set_facecolor('#c8e6c9')  # Light green
+            table[(i, 3)].set_facecolor('#c8e6c9')
         elif improvement_val < 0:
-            table[(i, 3)].set_facecolor('#ffcdd2')  # Light red
+            table[(i, 3)].set_facecolor('#ffcdd2')
         
-        # Alternate other columns
         if i % 2 == 0:
             for j in range(3):
                 table[(i, j)].set_facecolor('#f5f5f5')
@@ -582,8 +360,160 @@ def save_comparison_metrics_as_image(metrics_nb, metrics_crf, image_name, save_p
               fontsize=16, fontweight='bold', pad=20)
     
     plt.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
-    plt.close()
+    plt.close(fig)
 
+
+def save_summary_metrics_as_image(metrics_nb_list, metrics_crf_list, save_path):
+    """Save overall summary metrics with mean and std deviation"""
+    if not metrics_crf_list:
+        return
+    
+    # Calculate mean and std for Naive Bayes
+    mean_nb = {
+        key: np.mean([m[key] for m in metrics_nb_list])
+        for key in metrics_nb_list[0].keys()
+    }
+    
+    std_nb = {
+        key: np.std([m[key] for m in metrics_nb_list])
+        for key in metrics_nb_list[0].keys()
+    }
+    
+    # Calculate mean and std for CRF
+    mean_crf = {
+        key: np.mean([m[key] for m in metrics_crf_list])
+        for key in metrics_crf_list[0].keys()
+    }
+    
+    std_crf = {
+        key: np.std([m[key] for m in metrics_crf_list])
+        for key in metrics_crf_list[0].keys()
+    }
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    metrics_data = [
+        ['Metric', 'Naive Bayes (Mean)', 'NB (Std)', 'CRF (Mean)', 'CRF (Std)', 'Improvement'],
+        ['Accuracy',
+         f"{mean_nb['accuracy']:.4f}",
+         f"{std_nb['accuracy']:.4f}",
+         f"{mean_crf['accuracy']:.4f}",
+         f"{std_crf['accuracy']:.4f}",
+         f"{(mean_crf['accuracy'] - mean_nb['accuracy']):+.4f}"],
+        ['Dice - Disc',
+         f"{mean_nb['dice_disc']:.4f}",
+         f"{std_nb['dice_disc']:.4f}",
+         f"{mean_crf['dice_disc']:.4f}",
+         f"{std_crf['dice_disc']:.4f}",
+         f"{(mean_crf['dice_disc'] - mean_nb['dice_disc']):+.4f}"],
+        ['Dice - Cup',
+         f"{mean_nb['dice_cup']:.4f}",
+         f"{std_nb['dice_cup']:.4f}",
+         f"{mean_crf['dice_cup']:.4f}",
+         f"{std_crf['dice_cup']:.4f}",
+         f"{(mean_crf['dice_cup'] - mean_nb['dice_cup']):+.4f}"],
+        ['Dice - Background',
+         f"{mean_nb['dice_background']:.4f}",
+         f"{std_nb['dice_background']:.4f}",
+         f"{mean_crf['dice_background']:.4f}",
+         f"{std_crf['dice_background']:.4f}",
+         f"{(mean_crf['dice_background'] - mean_nb['dice_background']):+.4f}"],
+        ['Mean Dice',
+         f"{mean_nb['dice_mean']:.4f}",
+         f"{std_nb['dice_mean']:.4f}",
+         f"{mean_crf['dice_mean']:.4f}",
+         f"{std_crf['dice_mean']:.4f}",
+         f"{(mean_crf['dice_mean'] - mean_nb['dice_mean']):+.4f}"]
+    ]
+    
+    table = ax.table(cellText=metrics_data,
+                     cellLoc='center',
+                     loc='center',
+                     colWidths=[0.25, 0.15, 0.12, 0.15, 0.12, 0.15])
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 2.5)
+    
+    # Header styling
+    for i in range(6):
+        table[(0, i)].set_facecolor('#2196F3')
+        table[(0, i)].set_text_props(weight='bold', color='white')
+    
+    # Color rows
+    for i in range(1, len(metrics_data)):
+        # Color improvement column
+        improvement_val = float(metrics_data[i][5])
+        if improvement_val > 0:
+            table[(i, 5)].set_facecolor('#c8e6c9')
+        elif improvement_val < 0:
+            table[(i, 5)].set_facecolor('#ffcdd2')
+        
+        # Alternate row colors
+        if i % 2 == 0:
+            for j in range(5):
+                table[(i, j)].set_facecolor('#f5f5f5')
+    
+    # Highlight mean dice row (row 5)
+    for j in range(6):
+        table[(5, j)].set_facecolor('#fff9c4')
+        table[(5, j)].set_text_props(weight='bold')
+    
+    n_images = len(metrics_crf_list)
+    plt.title(f'Overall Summary Statistics - {n_images} Test Images',
+              fontsize=16, fontweight='bold', pad=20)
+    
+    plt.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+
+
+# ============================================================================
+# VISUALIZATION
+# ============================================================================
+
+def visualize_crf_comparison(original, naive_mask, crf_mask, gt_mask=None, save_path=None):
+    """Visualize comparison between Naive Bayes and CRF refinement"""
+    if gt_mask is not None:
+        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+        
+        axes[0].imshow(cv2.cvtColor(original, cv2.COLOR_BGR2RGB))
+        axes[0].set_title('Original Image')
+        axes[0].axis('off')
+        
+        axes[1].imshow(gt_mask, cmap='gray')
+        axes[1].set_title('Ground Truth')
+        axes[1].axis('off')
+        
+        axes[2].imshow(naive_mask, cmap='gray')
+        axes[2].set_title('Naive Bayes')
+        axes[2].axis('off')
+        
+        axes[3].imshow(crf_mask, cmap='gray')
+        axes[3].set_title('With CRF')
+        axes[3].axis('off')
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
+        axes[0].imshow(cv2.cvtColor(original, cv2.COLOR_BGR2RGB))
+        axes[0].set_title('Original Image')
+        axes[0].axis('off')
+        
+        axes[1].imshow(naive_mask, cmap='gray')
+        axes[1].set_title('Naive Bayes')
+        axes[1].axis('off')
+        
+        axes[2].imshow(crf_mask, cmap='gray')
+        axes[2].set_title('With CRF')
+        axes[2].axis('off')
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    
+    plt.close(fig)
 
 
 # ============================================================================
@@ -591,12 +521,11 @@ def save_comparison_metrics_as_image(metrics_nb, metrics_crf, image_name, save_p
 # ============================================================================
 
 def main():
-    """Memory-efficient main execution pipeline"""
-    import gc
+    """Memory-efficient main execution pipeline with CRF"""
     
     # Configuration
-    TRAIN_FUNDUS_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Training400\\Glaucoma'
-    TRAIN_MASK_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Disc_Cup_Masks\\Glaucoma'
+    TRAIN_FUNDUS_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Training400\\Non-Glaucoma'
+    TRAIN_MASK_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Disc_Cup_Masks\\Non-Glaucoma'
     TEST_FUNDUS_DIR = 'REFUGE2\\Test\\refuge2-test'
     TEST_MASK_DIR = 'REFUGE2\\Test\\Disc_Mask'
     OUTPUT_DIR = 'NormalizedCRFOutput'
@@ -605,18 +534,18 @@ def main():
     APPLY_CRF = True
     
     # MEMORY OPTIMIZATION SETTINGS
-    MAX_IMAGE_SIZE = 512  # Resize images to max 512x512
-    BATCH_SIZE = 3        # Process 3 images at a time
-    MAX_TRAIN_IMAGES = 20 # Reduce training images
-    MAX_TEST_IMAGES = 10   # Reduce test images
+    MAX_IMAGE_SIZE = 512      # Resize images to max 512x512
+    BATCH_SIZE = 10           # Process 10 images at a time
+    MAX_TRAIN_IMAGES = 400    # Limit training images
+    MAX_TEST_IMAGES = 25      # Limit test images
     
-    # CRF parameters - REDUCED for memory efficiency
+    # CRF parameters
     CRF_PARAMS = {
-        'n_iters': 5,              # Reduced iterations
+        'n_iters': 5,
         'sxy_gaussian': 3,
         'compat_gaussian': 3,
-        'sxy_bilateral': 60,       # Reduced
-        'srgb_bilateral': 10,      # Reduced
+        'sxy_bilateral': 60,
+        'srgb_bilateral': 10,
         'compat_bilateral': 10
     }
     
@@ -630,7 +559,8 @@ def main():
     fundus_files = sorted(glob(os.path.join(TRAIN_FUNDUS_DIR, '*.*')))[:MAX_TRAIN_IMAGES]
     mask_files = sorted(glob(os.path.join(TRAIN_MASK_DIR, '*.*')))[:MAX_TRAIN_IMAGES]
     
-    # Use memory-efficient training
+    print(f"Found {len(fundus_files)} training images")
+    
     clf, scaler = train_naive_bayes_memory_efficient(
         fundus_files, mask_files,
         use_both_colorspaces=USE_BOTH_COLORSPACES,
@@ -638,7 +568,6 @@ def main():
         max_size=MAX_IMAGE_SIZE
     )
     
-    # Clear memory after training
     gc.collect()
     
     # ========== TESTING ==========
@@ -647,6 +576,7 @@ def main():
     print("="*60)
     
     test_files = sorted(glob(os.path.join(TEST_FUNDUS_DIR, '*.*')))[:MAX_TEST_IMAGES]
+    print(f"Found {len(test_files)} test images")
     
     metrics_nb = []
     metrics_crf = []
@@ -658,7 +588,7 @@ def main():
         if test_image is None:
             continue
         
-        # RESIZE TEST IMAGE
+        # Resize test image
         test_image = resize_image(test_image, max_size=MAX_IMAGE_SIZE)
         
         # Predict with CRF
@@ -676,7 +606,8 @@ def main():
         
         if os.path.exists(gt_file):
             gt_mask = cv2.imread(gt_file, cv2.IMREAD_GRAYSCALE)
-            gt_mask = resize_image(gt_mask, max_size=MAX_IMAGE_SIZE)
+            gt_mask = resize_mask(gt_mask, max_size=MAX_IMAGE_SIZE)
+            gt_mask = remap_mask_labels(gt_mask)
             
             # Evaluate both methods
             metrics_nb_img = evaluate_segmentation(nb_mask, gt_mask)
@@ -685,26 +616,23 @@ def main():
             metrics_nb.append(metrics_nb_img)
             metrics_crf.append(metrics_crf_img)
             
-            print(f"\nNaive Bayes:")
-            print(f"  Accuracy: {metrics_nb_img['accuracy']:.4f}")
-            print(f"  Mean Dice: {metrics_nb_img['dice_mean']:.4f}")
+            print(f"  Naive Bayes - Accuracy: {metrics_nb_img['accuracy']:.4f}, Dice: {metrics_nb_img['dice_mean']:.4f}")
+            print(f"  With CRF    - Accuracy: {metrics_crf_img['accuracy']:.4f}, Dice: {metrics_crf_img['dice_mean']:.4f}")
+            print(f"  Improvement: {(metrics_crf_img['dice_mean'] - metrics_nb_img['dice_mean']):+.4f}")
             
-            print(f"\nWith CRF:")
-            print(f"  Accuracy: {metrics_crf_img['accuracy']:.4f}")
-            print(f"  Mean Dice: {metrics_crf_img['dice_mean']:.4f}")
-            
-            # Save comparison metrics
+            # Save comparison metrics for this image
             comparison_path = os.path.join(OUTPUT_DIR, f"{base_name}_metrics_comparison.png")
             save_comparison_metrics_as_image(metrics_nb_img, metrics_crf_img, 
                                             base_name, comparison_path)
         else:
             gt_mask = None
+            print("  No ground truth available")
         
         # Visualize comparison
         viz_path = os.path.join(OUTPUT_DIR, f"{base_name}_comparison.png")
         visualize_crf_comparison(test_image, nb_mask, crf_mask, gt_mask, viz_path)
         
-        # IMPORTANT: Close figure and clear memory after each image
+        # Clear memory
         plt.close('all')
         del test_image, crf_mask, nb_mask
         if gt_mask is not None:
@@ -718,40 +646,26 @@ def main():
         print("="*60)
         
         print("\nNaive Bayes:")
-        print(f"  Avg Accuracy: {np.mean([m['accuracy'] for m in metrics_nb]):.4f}")
-        print(f"  Avg Dice: {np.mean([m['dice_mean'] for m in metrics_nb]):.4f}")
+        print(f"  Avg Accuracy: {np.mean([m['accuracy'] for m in metrics_nb]):.4f} ± {np.std([m['accuracy'] for m in metrics_nb]):.4f}")
+        print(f"  Avg Dice: {np.mean([m['dice_mean'] for m in metrics_nb]):.4f} ± {np.std([m['dice_mean'] for m in metrics_nb]):.4f}")
         
         print("\nWith CRF Refinement:")
-        print(f"  Avg Accuracy: {np.mean([m['accuracy'] for m in metrics_crf]):.4f}")
-        print(f"  Avg Dice: {np.mean([m['dice_mean'] for m in metrics_crf]):.4f}")
+        print(f"  Avg Accuracy: {np.mean([m['accuracy'] for m in metrics_crf]):.4f} ± {np.std([m['accuracy'] for m in metrics_crf]):.4f}")
+        print(f"  Avg Dice: {np.mean([m['dice_mean'] for m in metrics_crf]):.4f} ± {np.std([m['dice_mean'] for m in metrics_crf]):.4f}")
         
         improvement = (np.mean([m['dice_mean'] for m in metrics_crf]) - 
                       np.mean([m['dice_mean'] for m in metrics_nb]))
-        print(f"\nOverall Dice Improvement: {improvement:.4f}")
+        print(f"\nOverall Dice Improvement: {improvement:+.4f}")
         
-        # Create overall summary
-        avg_metrics_nb = {
-            'accuracy': np.mean([m['accuracy'] for m in metrics_nb]),
-            'dice_disc': np.mean([m['dice_disc'] for m in metrics_nb]),
-            'dice_cup': np.mean([m['dice_cup'] for m in metrics_nb]),
-            'dice_background': np.mean([m['dice_background'] for m in metrics_nb]),
-            'dice_mean': np.mean([m['dice_mean'] for m in metrics_nb])
-        }
-        
-        avg_metrics_crf = {
-            'accuracy': np.mean([m['accuracy'] for m in metrics_crf]),
-            'dice_disc': np.mean([m['dice_disc'] for m in metrics_crf]),
-            'dice_cup': np.mean([m['dice_cup'] for m in metrics_crf]),
-            'dice_background': np.mean([m['dice_background'] for m in metrics_crf]),
-            'dice_mean': np.mean([m['dice_mean'] for m in metrics_crf])
-        }
-        
+        # Save overall summary with mean and std
         summary_path = os.path.join(OUTPUT_DIR, "overall_metrics_summary.png")
-        save_comparison_metrics_as_image(avg_metrics_nb, avg_metrics_crf,
-                                        "Overall Average", summary_path)
-        
-        print(f"\nMetrics images saved to: {OUTPUT_DIR}")
-
+        save_summary_metrics_as_image(metrics_nb, metrics_crf, summary_path)
+        print(f"\nSummary metrics saved to: {summary_path}")
+    
+    print("\n" + "="*60)
+    print("PROCESSING COMPLETE")
+    print(f"Results saved to: {OUTPUT_DIR}")
+    print("="*60)
 
 
 if __name__ == "__main__":
