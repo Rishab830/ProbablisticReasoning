@@ -342,49 +342,6 @@ def visualize_results(original, predicted_mask, gt_mask=None, save_path=None):
     # plt.show()
 
 
-def save_mask(mask, save_path):
-    """Save segmentation mask as image"""
-    cv2.imwrite(save_path, mask.astype(np.uint8))
-    print(f"Mask saved to {save_path}")
-
-
-def create_colored_overlay(original, mask):
-    """
-    Create colored overlay of segmentation on original image
-    
-    Parameters:
-    -----------
-    original : numpy array
-        Original fundus image
-    mask : numpy array
-        Segmentation mask (values: 0, 128, 255)
-    
-    Returns:
-    --------
-    overlay : numpy array
-        Image with colored segmentation overlay
-    """
-    overlay = original.copy()
-    
-    # Create colored masks
-    disc_mask = (mask == 0)
-    cup_mask = (mask == 128)
-    
-    # Apply colors with transparency
-    overlay[disc_mask] = cv2.addWeighted(
-        overlay[disc_mask], 0.6,
-        np.full_like(overlay[disc_mask], [0, 255, 0]), 0.4,  # Green for disc
-        0
-    )
-    overlay[cup_mask] = cv2.addWeighted(
-        overlay[cup_mask], 0.6,
-        np.full_like(overlay[cup_mask], [255, 0, 0]), 0.4,  # Blue for cup
-        0
-    )
-    
-    return overlay
-
-
 # ============================================================================
 # MAIN PIPELINE
 # ============================================================================
@@ -474,16 +431,6 @@ def main():
         
         # Save results
         base_name = os.path.splitext(test_basename)[0]
-        
-        # Save predicted mask
-        mask_save_path = os.path.join(OUTPUT_DIR, f"{base_name}_predicted_mask.png")
-        save_mask(predicted_mask, mask_save_path)
-        
-        # Save colored overlay
-        overlay = create_colored_overlay(test_image, predicted_mask)
-        overlay_save_path = os.path.join(OUTPUT_DIR, f"{base_name}_overlay.png")
-        cv2.imwrite(overlay_save_path, overlay)
-        print(f"Overlay saved to {overlay_save_path}")
         
         # Visualize and save comparison
         viz_save_path = os.path.join(OUTPUT_DIR, f"{base_name}_comparison.png")

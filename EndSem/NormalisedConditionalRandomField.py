@@ -12,23 +12,75 @@ from glob import glob
 # FEATURE EXTRACTION (Same as before)
 # ============================================================================
 
-def extract_features_with_coords(image, normalize_coords=True, use_both_colorspaces=True):
+def normalize_fundus_image(image):
+    """
+    Normalize fundus image using CLAHE and illumination correction
+    """
+    # Convert to LAB color space for better illumination handling
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    
+    # Apply CLAHE to L channel for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_clahe = clahe.apply(l)
+    
+    # Merge and convert back
+    lab_clahe = cv2.merge([l_clahe, a, b])
+    normalized = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
+    
+    return normalized
+
+
+def normalize_illumination(image):
+    """
+    Correct uneven illumination in fundus images
+    """
+    # Process each channel separately
+    normalized_channels = []
+    for i in range(3):
+        channel = image[:, :, i].astype(np.float32)
+        
+        # Estimate background using large Gaussian blur
+        background = cv2.GaussianBlur(channel, (0, 0), sigmaX=50)
+        
+        # Subtract background and rescale
+        corrected = channel - background + 128
+        corrected = np.clip(corrected, 0, 255).astype(np.uint8)
+        normalized_channels.append(corrected)
+    
+    return cv2.merge(normalized_channels)
+
+
+def extract_features_with_coords(image, normalize_coords=True, 
+                                 use_both_colorspaces=True, 
+                                 normalize_colors=True):
     """Extract color and spatial features from fundus image"""
     height, width = image.shape[:2]
     
     # Extract RGB features
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    rgb_features = image_rgb.reshape(-1, 3)
+    rgb_features = image_rgb.reshape(-1, 3).astype(np.float32)
+    
+    # Normalize RGB to [0, 1] range
+    if normalize_colors:
+        rgb_features = rgb_features / 255.0
     
     if use_both_colorspaces:
         # Extract HSV features
         image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        hsv_features = image_hsv.reshape(-1, 3)
+        hsv_features = image_hsv.reshape(-1, 3).astype(np.float32)
+        
+        # Normalize HSV: H to [0,1], S to [0,1], V to [0,1]
+        if normalize_colors:
+            hsv_features[:, 0] = hsv_features[:, 0] / 180.0  # H: 0-180
+            hsv_features[:, 1] = hsv_features[:, 1] / 255.0  # S: 0-255
+            hsv_features[:, 2] = hsv_features[:, 2] / 255.0  # V: 0-255
+        
         color_features = np.hstack([rgb_features, hsv_features])
     else:
         color_features = rgb_features
     
-    # Create coordinate grids
+    # Create coordinate grids (keep as before)
     if normalize_coords:
         y_coords, x_coords = np.meshgrid(
             np.linspace(0, 1, height),
@@ -372,7 +424,7 @@ def main():
     TRAIN_MASK_DIR = 'REFUGE2\\Train\\REFUGE1-train\\Disc_Cup_Masks\\Glaucoma'
     TEST_FUNDUS_DIR = 'REFUGE2\\Test\\refuge2-test'
     TEST_MASK_DIR = 'REFUGE2\\Test\\Disc_Mask'  # Optional, for evaluation
-    OUTPUT_DIR = 'CRFOutput'
+    OUTPUT_DIR = 'NormalizedCRFOutput'
     
     USE_BOTH_COLORSPACES = True
     APPLY_CRF = True
