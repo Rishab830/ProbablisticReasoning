@@ -1,0 +1,439 @@
+\doxysection{Naive\+Bayes\+Classifier.\+py File Reference}
+\hypertarget{_naive_bayes_classifier_8py}{}\label{_naive_bayes_classifier_8py}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+
+
+Optic disc and cup segmentation using Naive Bayes classifier.  
+
+
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a13d212ce0288627d6d49c13eddd08478}{Naive\+Bayes\+Classifier.\+resize\+\_\+image}} (image, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Resize regular fundus image to reduce memory usage. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a9a277730ef50880d2684d3ab72208de5}{Naive\+Bayes\+Classifier.\+resize\+\_\+mask}} (mask, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Resize segmentation mask using nearest neighbor interpolation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a9ff8da211c17e9d511aed1aa949134f5}{Naive\+Bayes\+Classifier.\+remap\+\_\+mask\+\_\+labels}} (mask)
+\begin{DoxyCompactList}\small\item\em Remap mask pixel values to standardized label values. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a73b75df90f92c0ad4944c62bbed4fa22}{Naive\+Bayes\+Classifier.\+extract\+\_\+features\+\_\+with\+\_\+coords}} (image, normalize\+\_\+coords=True, use\+\_\+both\+\_\+colorspaces=True)
+\begin{DoxyCompactList}\small\item\em Extract color and spatial features from fundus image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a8c74781d16d48fbc93bdadc17dc2db3e}{Naive\+Bayes\+Classifier.\+train\+\_\+naive\+\_\+bayes\+\_\+memory\+\_\+efficient}} (fundus\+\_\+files, mask\+\_\+files, use\+\_\+both\+\_\+colorspaces=True, batch\+\_\+size=5, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Train Naive Bayes classifier using batch processing and incremental learning. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_ac6cb2d89b90545261429180549c75224}{Naive\+Bayes\+Classifier.\+predict\+\_\+segmentation}} (clf, scaler, test\+\_\+image, use\+\_\+both\+\_\+colorspaces=True)
+\begin{DoxyCompactList}\small\item\em Predict segmentation mask for a test image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a7d436fe514cad6330c5f014915b37f4e}{Naive\+Bayes\+Classifier.\+calculate\+\_\+dice\+\_\+coefficient}} (pred, gt, label)
+\begin{DoxyCompactList}\small\item\em Calculate Dice coefficient for a specific segmentation class. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a9e87a92082946d6e7f1a377d04ceabbb}{Naive\+Bayes\+Classifier.\+calculate\+\_\+iou}} (pred, gt, label)
+\begin{DoxyCompactList}\small\item\em Calculate Intersection over Union (IoU) for a specific segmentation class. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a8080beb1a309c9244ea838e3019a657a}{Naive\+Bayes\+Classifier.\+evaluate\+\_\+segmentation}} (pred\+\_\+mask, gt\+\_\+mask)
+\begin{DoxyCompactList}\small\item\em Evaluate segmentation performance using multiple metrics. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_afe82966cb6078dba455bdd207c50bac0}{Naive\+Bayes\+Classifier.\+save\+\_\+metrics\+\_\+as\+\_\+image}} (metrics\+\_\+dict, image\+\_\+name, save\+\_\+path)
+\begin{DoxyCompactList}\small\item\em Save evaluation metrics as a formatted table image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_aa4876264353f0b3bf444e100b7467b62}{Naive\+Bayes\+Classifier.\+save\+\_\+summary\+\_\+metrics\+\_\+as\+\_\+image}} (all\+\_\+metrics, save\+\_\+path)
+\begin{DoxyCompactList}\small\item\em Save overall summary metrics across all test images as a table image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_a5afa48c6aec410b5355df43bab6e5ec8}{Naive\+Bayes\+Classifier.\+visualize\+\_\+results}} (original, predicted\+\_\+mask, gt\+\_\+mask=None, save\+\_\+path=None)
+\begin{DoxyCompactList}\small\item\em Visualize segmentation results with side-\/by-\/side comparison. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_naive_bayes_classifier_8py_acf9536d05f474b242e8d2078e7c75d95}{Naive\+Bayes\+Classifier.\+main}} ()
+\begin{DoxyCompactList}\small\item\em Memory-\/efficient main execution pipeline for optic disc and cup segmentation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Optic disc and cup segmentation using Naive Bayes classifier. 
+
+This module implements a memory-\/efficient pipeline for retinal image segmentation using a Gaussian Naive Bayes classifier with spatial and color features to segment optic disc, cup, and background regions from fundus images.
+
+\begin{DoxyAuthor}{Author}
+Rishab Ramesh Nair 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+September 23, 2025 
+\end{DoxyDate}
+
+
+\label{doc-func-members}
+\Hypertarget{_naive_bayes_classifier_8py_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{_naive_bayes_classifier_8py_a7d436fe514cad6330c5f014915b37f4e}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!calculate\_dice\_coefficient@{calculate\_dice\_coefficient}}
+\index{calculate\_dice\_coefficient@{calculate\_dice\_coefficient}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{calculate\_dice\_coefficient()}{calculate\_dice\_coefficient()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a7d436fe514cad6330c5f014915b37f4e} 
+Naive\+Bayes\+Classifier.\+calculate\+\_\+dice\+\_\+coefficient (\begin{DoxyParamCaption}\item[{}]{pred}{, }\item[{}]{gt}{, }\item[{}]{label}{}\end{DoxyParamCaption})}
+
+
+
+Calculate Dice coefficient for a specific segmentation class. 
+
+Computes the Dice similarity coefficient (F1 score) between predicted and ground truth segmentation for a single class label. The Dice coefficient is calculated as\+: 2 \texorpdfstring{$\ast$}{*} \texorpdfstring{$\vert$}{|}X ∩ Y\texorpdfstring{$\vert$}{|} / (\texorpdfstring{$\vert$}{|}\+X\texorpdfstring{$\vert$}{|} + \texorpdfstring{$\vert$}{|}\+Y\texorpdfstring{$\vert$}{|})
+
+
+\begin{DoxyParams}{Parameters}
+{\em pred} & Predicted segmentation mask. \\
+\hline
+{\em gt} & Ground truth segmentation mask. \\
+\hline
+{\em label} & Class label value to evaluate (0, 128, or 255).\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Dice coefficient value in range \mbox{[}0, 1\mbox{]} where 1 indicates perfect overlap.
+\end{DoxyReturn}
+\begin{DoxyVerb}Calculate Dice coefficient for a specific class\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a9e87a92082946d6e7f1a377d04ceabbb}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!calculate\_iou@{calculate\_iou}}
+\index{calculate\_iou@{calculate\_iou}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{calculate\_iou()}{calculate\_iou()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a9e87a92082946d6e7f1a377d04ceabbb} 
+Naive\+Bayes\+Classifier.\+calculate\+\_\+iou (\begin{DoxyParamCaption}\item[{}]{pred}{, }\item[{}]{gt}{, }\item[{}]{label}{}\end{DoxyParamCaption})}
+
+
+
+Calculate Intersection over Union (IoU) for a specific segmentation class. 
+
+Computes the IoU (Jaccard index) between predicted and ground truth segmentation for a single class label. IoU is calculated as\+: \texorpdfstring{$\vert$}{|}X ∩ Y\texorpdfstring{$\vert$}{|} / \texorpdfstring{$\vert$}{|}X ∪ Y\texorpdfstring{$\vert$}{|}
+
+
+\begin{DoxyParams}{Parameters}
+{\em pred} & Predicted segmentation mask. \\
+\hline
+{\em gt} & Ground truth segmentation mask. \\
+\hline
+{\em label} & Class label value to evaluate (0, 128, or 255).\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+IoU value in range \mbox{[}0, 1\mbox{]} where 1 indicates perfect overlap.
+\end{DoxyReturn}
+\begin{DoxyVerb}Calculate Intersection over Union (IoU) for a specific class\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a8080beb1a309c9244ea838e3019a657a}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!evaluate\_segmentation@{evaluate\_segmentation}}
+\index{evaluate\_segmentation@{evaluate\_segmentation}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{evaluate\_segmentation()}{evaluate\_segmentation()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a8080beb1a309c9244ea838e3019a657a} 
+Naive\+Bayes\+Classifier.\+evaluate\+\_\+segmentation (\begin{DoxyParamCaption}\item[{}]{pred\+\_\+mask}{, }\item[{}]{gt\+\_\+mask}{}\end{DoxyParamCaption})}
+
+
+
+Evaluate segmentation performance using multiple metrics. 
+
+Computes comprehensive evaluation metrics including overall pixel accuracy, per-\/class Dice coefficients and IoU scores for all three classes (disc, cup, background), and their mean values.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pred\+\_\+mask} & Predicted segmentation mask. \\
+\hline
+{\em gt\+\_\+mask} & Ground truth segmentation mask.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Dictionary containing the following metrics\+:
+\begin{DoxyItemize}
+\item \textquotesingle{}accuracy\textquotesingle{}\+: Overall pixel accuracy
+\item \textquotesingle{}dice\+\_\+disc\textquotesingle{}\+: Dice coefficient for disc class (0)
+\item \textquotesingle{}dice\+\_\+cup\textquotesingle{}\+: Dice coefficient for cup class (128)
+\item \textquotesingle{}dice\+\_\+background\textquotesingle{}\+: Dice coefficient for background class (255)
+\item \textquotesingle{}dice\+\_\+mean\textquotesingle{}\+: Mean Dice across all classes
+\item \textquotesingle{}iou\+\_\+disc\textquotesingle{}\+: IoU for disc class (0)
+\item \textquotesingle{}iou\+\_\+cup\textquotesingle{}\+: IoU for cup class (128)
+\item \textquotesingle{}iou\+\_\+background\textquotesingle{}\+: IoU for background class (255)
+\item \textquotesingle{}iou\+\_\+mean\textquotesingle{}\+: Mean IoU across all classes
+\end{DoxyItemize}
+\end{DoxyReturn}
+\begin{DoxyVerb}Evaluate segmentation performance\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a73b75df90f92c0ad4944c62bbed4fa22}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!extract\_features\_with\_coords@{extract\_features\_with\_coords}}
+\index{extract\_features\_with\_coords@{extract\_features\_with\_coords}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{extract\_features\_with\_coords()}{extract\_features\_with\_coords()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a73b75df90f92c0ad4944c62bbed4fa22} 
+Naive\+Bayes\+Classifier.\+extract\+\_\+features\+\_\+with\+\_\+coords (\begin{DoxyParamCaption}\item[{}]{image}{, }\item[{}]{normalize\+\_\+coords}{ = {\ttfamily True}, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}}\end{DoxyParamCaption})}
+
+
+
+Extract color and spatial features from fundus image. 
+
+Extracts pixel-\/wise features including RGB and optionally HSV color information along with normalized or absolute spatial coordinates for training or prediction.
+
+
+\begin{DoxyParams}{Parameters}
+{\em image} & Input fundus image (BGR format). \\
+\hline
+{\em normalize\+\_\+coords} & If True, normalize coordinates to \mbox{[}0,1\mbox{]} range. Default is True. \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, extract both RGB and HSV features. Default is True.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Feature array of shape (height\texorpdfstring{$\ast$}{*}width, n\+\_\+features) where n\+\_\+features is 8 (RGB + HSV + x + y) if use\+\_\+both\+\_\+colorspaces=True, or 5 (RGB + x + y) if use\+\_\+both\+\_\+colorspaces=False.
+\end{DoxyReturn}
+\begin{DoxyVerb}Extract color and spatial features from fundus image\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_acf9536d05f474b242e8d2078e7c75d95}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!main@{main}}
+\index{main@{main}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_acf9536d05f474b242e8d2078e7c75d95} 
+Naive\+Bayes\+Classifier.\+main (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Memory-\/efficient main execution pipeline for optic disc and cup segmentation. 
+
+Executes the complete segmentation workflow including\+:
+\begin{DoxyItemize}
+\item Configuration of data directories and processing parameters
+\item Loading and preprocessing training data with memory-\/efficient batching
+\item Training Gaussian Naive Bayes classifier with incremental learning
+\item Testing on validation images with ground truth evaluation
+\item Computing comprehensive metrics (accuracy, Dice, IoU)
+\item Saving visualizations and metric tables for individual images
+\item Generating overall summary statistics across all test images
+\end{DoxyItemize}
+
+The pipeline uses memory optimization techniques including image resizing, batch processing, and explicit garbage collection to handle large datasets.
+
+\begin{DoxyReturn}{Returns}
+None. All outputs (predictions, metrics, visualizations) are saved to OUTPUT\+\_\+\+DIR.
+\end{DoxyReturn}
+\begin{DoxyVerb}Memory-efficient main execution pipeline\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_ac6cb2d89b90545261429180549c75224}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!predict\_segmentation@{predict\_segmentation}}
+\index{predict\_segmentation@{predict\_segmentation}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{predict\_segmentation()}{predict\_segmentation()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_ac6cb2d89b90545261429180549c75224} 
+Naive\+Bayes\+Classifier.\+predict\+\_\+segmentation (\begin{DoxyParamCaption}\item[{}]{clf}{, }\item[{}]{scaler}{, }\item[{}]{test\+\_\+image}{, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}}\end{DoxyParamCaption})}
+
+
+
+Predict segmentation mask for a test image. 
+
+Extracts features from the test image, standardizes them using the fitted scaler, and predicts pixel-\/wise class labels using the trained Naive Bayes classifier.
+
+
+\begin{DoxyParams}{Parameters}
+{\em clf} & Trained Gaussian\+NB classifier. \\
+\hline
+{\em scaler} & Fitted Standard\+Scaler for feature normalization. \\
+\hline
+{\em test\+\_\+image} & Input test fundus image (BGR format). \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, use both RGB and HSV features. Default is True.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Predicted segmentation mask of shape (height, width) with values in \{0, 128, 255\}.
+\end{DoxyReturn}
+\begin{DoxyVerb}Predict segmentation mask for a test image\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a9ff8da211c17e9d511aed1aa949134f5}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!remap\_mask\_labels@{remap\_mask\_labels}}
+\index{remap\_mask\_labels@{remap\_mask\_labels}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{remap\_mask\_labels()}{remap\_mask\_labels()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a9ff8da211c17e9d511aed1aa949134f5} 
+Naive\+Bayes\+Classifier.\+remap\+\_\+mask\+\_\+labels (\begin{DoxyParamCaption}\item[{}]{mask}{}\end{DoxyParamCaption})}
+
+
+
+Remap mask pixel values to standardized label values. 
+
+Converts grayscale mask values to exactly three discrete labels based on intensity thresholds. Handles cases where resizing creates intermediate values.
+\begin{DoxyItemize}
+\item Values 0-\/63 map to 0 (disc)
+\item Values 64-\/191 map to 128 (cup)
+\item Values 192-\/255 map to 255 (background)
+\end{DoxyItemize}
+
+
+\begin{DoxyParams}{Parameters}
+{\em mask} & Input grayscale mask with arbitrary intensity values.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Remapped mask with values in \{0, 128, 255\}.
+\end{DoxyReturn}
+\begin{DoxyVerb}Remap mask values to exactly 0, 128, or 255
+Handles cases where resizing creates intermediate values
+\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a13d212ce0288627d6d49c13eddd08478}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!resize\_image@{resize\_image}}
+\index{resize\_image@{resize\_image}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{resize\_image()}{resize\_image()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a13d212ce0288627d6d49c13eddd08478} 
+Naive\+Bayes\+Classifier.\+resize\+\_\+image (\begin{DoxyParamCaption}\item[{}]{image}{, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Resize regular fundus image to reduce memory usage. 
+
+Proportionally resizes an image so that its largest dimension does not exceed the specified maximum size while maintaining aspect ratio using area interpolation.
+
+
+\begin{DoxyParams}{Parameters}
+{\em image} & Input image array (BGR format). \\
+\hline
+{\em max\+\_\+size} & Maximum dimension size in pixels. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Resized image or original image if already within size limit.
+\end{DoxyReturn}
+\begin{DoxyVerb}Resize regular image (fundus) to reduce memory usage\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a9a277730ef50880d2684d3ab72208de5}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!resize\_mask@{resize\_mask}}
+\index{resize\_mask@{resize\_mask}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{resize\_mask()}{resize\_mask()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a9a277730ef50880d2684d3ab72208de5} 
+Naive\+Bayes\+Classifier.\+resize\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{mask}{, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Resize segmentation mask using nearest neighbor interpolation. 
+
+Resizes a mask image while preserving discrete label values by using nearest neighbor interpolation to avoid creating intermediate values.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mask} & Input mask array with discrete labels. \\
+\hline
+{\em max\+\_\+size} & Maximum dimension size in pixels. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Resized mask or original mask if already within size limit.
+\end{DoxyReturn}
+\begin{DoxyVerb}Resize mask using nearest neighbor to preserve discrete labels\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_afe82966cb6078dba455bdd207c50bac0}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!save\_metrics\_as\_image@{save\_metrics\_as\_image}}
+\index{save\_metrics\_as\_image@{save\_metrics\_as\_image}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{save\_metrics\_as\_image()}{save\_metrics\_as\_image()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_afe82966cb6078dba455bdd207c50bac0} 
+Naive\+Bayes\+Classifier.\+save\+\_\+metrics\+\_\+as\+\_\+image (\begin{DoxyParamCaption}\item[{}]{metrics\+\_\+dict}{, }\item[{}]{image\+\_\+name}{, }\item[{}]{save\+\_\+path}{}\end{DoxyParamCaption})}
+
+
+
+Save evaluation metrics as a formatted table image. 
+
+Creates and saves a styled table displaying all evaluation metrics including pixel accuracy, Dice coefficients, and IoU scores for a single test image. The table includes color-\/coded rows and highlighted mean scores.
+
+
+\begin{DoxyParams}{Parameters}
+{\em metrics\+\_\+dict} & Dictionary containing evaluation metrics from evaluate\+\_\+segmentation(). \\
+\hline
+{\em image\+\_\+name} & Name of the image being evaluated (used in title). \\
+\hline
+{\em save\+\_\+path} & Full file path where the metrics table image will be saved.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Saves the metrics table as a PNG image to the specified path.
+\end{DoxyReturn}
+\begin{DoxyVerb}Save evaluation metrics as a table image
+
+Parameters:
+-----------
+metrics_dict : dict
+    Dictionary containing evaluation metrics
+image_name : str
+    Name of the image being evaluated
+save_path : str
+    Full path where to save the metrics image
+\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_aa4876264353f0b3bf444e100b7467b62}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!save\_summary\_metrics\_as\_image@{save\_summary\_metrics\_as\_image}}
+\index{save\_summary\_metrics\_as\_image@{save\_summary\_metrics\_as\_image}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{save\_summary\_metrics\_as\_image()}{save\_summary\_metrics\_as\_image()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_aa4876264353f0b3bf444e100b7467b62} 
+Naive\+Bayes\+Classifier.\+save\+\_\+summary\+\_\+metrics\+\_\+as\+\_\+image (\begin{DoxyParamCaption}\item[{}]{all\+\_\+metrics}{, }\item[{}]{save\+\_\+path}{}\end{DoxyParamCaption})}
+
+
+
+Save overall summary metrics across all test images as a table image. 
+
+Computes mean and standard deviation for all metrics across multiple test images and saves a formatted table displaying the aggregated statistics.
+
+
+\begin{DoxyParams}{Parameters}
+{\em all\+\_\+metrics} & List of metrics dictionaries from all test images. Each dictionary should have the same keys as returned by evaluate\+\_\+segmentation(). \\
+\hline
+{\em save\+\_\+path} & Full file path where the summary metrics table image will be saved.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Saves the summary metrics table as a PNG image. Returns early if all\+\_\+metrics is empty.
+\end{DoxyReturn}
+\begin{DoxyVerb}Save overall summary metrics as a table image
+
+Parameters:
+-----------
+all_metrics : list of dict
+    List of metrics dictionaries from all test images
+save_path : str
+    Path to save the summary image
+\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a8c74781d16d48fbc93bdadc17dc2db3e}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!train\_naive\_bayes\_memory\_efficient@{train\_naive\_bayes\_memory\_efficient}}
+\index{train\_naive\_bayes\_memory\_efficient@{train\_naive\_bayes\_memory\_efficient}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{train\_naive\_bayes\_memory\_efficient()}{train\_naive\_bayes\_memory\_efficient()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a8c74781d16d48fbc93bdadc17dc2db3e} 
+Naive\+Bayes\+Classifier.\+train\+\_\+naive\+\_\+bayes\+\_\+memory\+\_\+efficient (\begin{DoxyParamCaption}\item[{}]{fundus\+\_\+files}{, }\item[{}]{mask\+\_\+files}{, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}, }\item[{}]{batch\+\_\+size}{ = {\ttfamily 5}, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Train Naive Bayes classifier using batch processing and incremental learning. 
+
+Trains a Gaussian Naive Bayes classifier on fundus images and their segmentation masks using incremental learning with batch processing to reduce memory usage. Uses partial\+\_\+fit for online learning across batches.
+
+
+\begin{DoxyParams}{Parameters}
+{\em fundus\+\_\+files} & List of file paths to training fundus images. \\
+\hline
+{\em mask\+\_\+files} & List of file paths to corresponding segmentation masks. \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, use both RGB and HSV color spaces. Default is True. \\
+\hline
+{\em batch\+\_\+size} & Number of images to process per batch. Default is 5. \\
+\hline
+{\em max\+\_\+size} & Maximum image dimension for resizing. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Tuple of (trained\+\_\+classifier, fitted\+\_\+scaler) where\+:
+\begin{DoxyItemize}
+\item trained\+\_\+classifier is a Gaussian\+NB object trained on all batches
+\item fitted\+\_\+scaler is a Standard\+Scaler for feature normalization
+\end{DoxyItemize}
+\end{DoxyReturn}
+\begin{DoxyVerb}Memory-efficient training with batching and incremental learning
+
+Parameters:
+-----------
+fundus_files : list
+    List of paths to fundus images
+mask_files : list
+    List of paths to mask images
+use_both_colorspaces : bool
+    Whether to use both RGB and HSV features
+batch_size : int
+    Number of images to process at once
+max_size : int
+    Maximum image dimension for resizing
+
+Returns:
+--------
+clf : GaussianNB
+    Trained classifier
+scaler : StandardScaler
+    Fitted feature scaler
+\end{DoxyVerb}
+ \Hypertarget{_naive_bayes_classifier_8py_a5afa48c6aec410b5355df43bab6e5ec8}\index{NaiveBayesClassifier.py@{NaiveBayesClassifier.py}!visualize\_results@{visualize\_results}}
+\index{visualize\_results@{visualize\_results}!NaiveBayesClassifier.py@{NaiveBayesClassifier.py}}
+\doxysubsubsection{\texorpdfstring{visualize\_results()}{visualize\_results()}}
+{\footnotesize\ttfamily \label{_naive_bayes_classifier_8py_a5afa48c6aec410b5355df43bab6e5ec8} 
+Naive\+Bayes\+Classifier.\+visualize\+\_\+results (\begin{DoxyParamCaption}\item[{}]{original}{, }\item[{}]{predicted\+\_\+mask}{, }\item[{}]{gt\+\_\+mask}{ = {\ttfamily None}, }\item[{}]{save\+\_\+path}{ = {\ttfamily None}}\end{DoxyParamCaption})}
+
+
+
+Visualize segmentation results with side-\/by-\/side comparison. 
+
+Creates a visualization comparing the original image, predicted segmentation mask, and optionally the ground truth mask. Saves the visualization as an image file.
+
+
+\begin{DoxyParams}{Parameters}
+{\em original} & Original fundus image (BGR format). \\
+\hline
+{\em predicted\+\_\+mask} & Predicted segmentation mask with values \{0, 128, 255\}. \\
+\hline
+{\em gt\+\_\+mask} & Ground truth mask (optional). If provided, creates 3-\/panel visualization. If None, creates 2-\/panel visualization. Default is None. \\
+\hline
+{\em save\+\_\+path} & File path to save the visualization image. If None, the figure is only closed without saving. Default is None.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Either saves the visualization to disk or closes the figure.
+\end{DoxyReturn}
+\begin{DoxyVerb}Visualize segmentation results\end{DoxyVerb}
+ 

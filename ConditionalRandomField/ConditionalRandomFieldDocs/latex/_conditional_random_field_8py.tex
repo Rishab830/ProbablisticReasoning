@@ -1,0 +1,449 @@
+\doxysection{Conditional\+Random\+Field.\+py File Reference}
+\hypertarget{_conditional_random_field_8py}{}\label{_conditional_random_field_8py}\index{ConditionalRandomField.py@{ConditionalRandomField.py}}
+
+
+Optic disc and cup segmentation using Naive Bayes classifier with Dense CRF refinement.  
+
+
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_conditional_random_field_8py_adc1d8d77c54b75c2a925a126b607077a}{Conditional\+Random\+Field.\+resize\+\_\+image}} (image, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Resize regular fundus image to reduce memory usage. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a0416cc086144ca4092d6a99c010fd9e4}{Conditional\+Random\+Field.\+resize\+\_\+mask}} (mask, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Resize segmentation mask using nearest neighbor interpolation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a1d094533ad75ac987b0d282962501969}{Conditional\+Random\+Field.\+remap\+\_\+mask\+\_\+labels}} (mask)
+\begin{DoxyCompactList}\small\item\em Remap mask pixel values to standardized label values. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a6f27f25b525222640a742d237d33ede2}{Conditional\+Random\+Field.\+extract\+\_\+features\+\_\+with\+\_\+coords}} (image, normalize\+\_\+coords=True, use\+\_\+both\+\_\+colorspaces=True)
+\begin{DoxyCompactList}\small\item\em Extract color and spatial features from fundus image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_ad91469ec729d736aed5cab6ef1720eb1}{Conditional\+Random\+Field.\+train\+\_\+naive\+\_\+bayes\+\_\+memory\+\_\+efficient}} (fundus\+\_\+files, mask\+\_\+files, use\+\_\+both\+\_\+colorspaces=True, batch\+\_\+size=5, max\+\_\+size=512)
+\begin{DoxyCompactList}\small\item\em Train Naive Bayes classifier using batch processing for memory efficiency. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a324acd24da4153440cb43dcc1dc8ac77}{Conditional\+Random\+Field.\+get\+\_\+probability\+\_\+map}} (clf, scaler, image, use\+\_\+both\+\_\+colorspaces=True)
+\begin{DoxyCompactList}\small\item\em Generate probability map from Naive Bayes classifier predictions. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a2d9c88f375df41c8b4617a1387758861}{Conditional\+Random\+Field.\+apply\+\_\+dense\+\_\+crf}} (image, probabilities, n\+\_\+iters=5, sxy\+\_\+gaussian=3, compat\+\_\+gaussian=3, sxy\+\_\+bilateral=80, srgb\+\_\+bilateral=13, compat\+\_\+bilateral=10)
+\begin{DoxyCompactList}\small\item\em Apply Dense Conditional Random Field refinement to probability map. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a2903e869b8d68470879216bea67cc86f}{Conditional\+Random\+Field.\+map\+\_\+labels\+\_\+back}} (crf\+\_\+output, label\+\_\+mapping)
+\begin{DoxyCompactList}\small\item\em Map CRF integer labels back to original mask values. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a3167e00287c33895d35b70e84922028d}{Conditional\+Random\+Field.\+predict\+\_\+with\+\_\+crf}} (clf, scaler, test\+\_\+image, use\+\_\+both\+\_\+colorspaces=True, apply\+\_\+crf=True, crf\+\_\+params=None)
+\begin{DoxyCompactList}\small\item\em Predict segmentation with optional CRF refinement. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a67d036f00b577b8651ff070fefd3ce67}{Conditional\+Random\+Field.\+calculate\+\_\+dice\+\_\+coefficient}} (pred, gt, label)
+\begin{DoxyCompactList}\small\item\em Calculate Dice coefficient for a specific segmentation class. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_ab498834be57df7d11f662a24322f0824}{Conditional\+Random\+Field.\+evaluate\+\_\+segmentation}} (pred\+\_\+mask, gt\+\_\+mask)
+\begin{DoxyCompactList}\small\item\em Evaluate segmentation performance using multiple metrics. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a5e8c036fe43733b614dadb0449a54282}{Conditional\+Random\+Field.\+save\+\_\+comparison\+\_\+metrics\+\_\+as\+\_\+image}} (metrics\+\_\+nb, metrics\+\_\+crf, image\+\_\+name, save\+\_\+path)
+\begin{DoxyCompactList}\small\item\em Save comparison table of Naive Bayes and CRF metrics as image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a5caf19f049bdbe58642688a755b917d9}{Conditional\+Random\+Field.\+save\+\_\+summary\+\_\+metrics\+\_\+as\+\_\+image}} (metrics\+\_\+nb\+\_\+list, metrics\+\_\+crf\+\_\+list, save\+\_\+path)
+\begin{DoxyCompactList}\small\item\em Save overall summary metrics across all test images as table image. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_ae91a4f328ea5aa10177af626592993ec}{Conditional\+Random\+Field.\+visualize\+\_\+crf\+\_\+comparison}} (original, naive\+\_\+mask, crf\+\_\+mask, gt\+\_\+mask=None, save\+\_\+path=None)
+\begin{DoxyCompactList}\small\item\em Visualize comparison between Naive Bayes and CRF segmentation results. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{_conditional_random_field_8py_a68438a408554e185b9b7a52ecaef71df}{Conditional\+Random\+Field.\+main}} ()
+\begin{DoxyCompactList}\small\item\em Memory-\/efficient main execution pipeline with CRF refinement. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Optic disc and cup segmentation using Naive Bayes classifier with Dense CRF refinement. 
+
+This module implements a memory-\/efficient pipeline for retinal image segmentation that combines Naive Bayes classification with Dense Conditional Random Field (CRF) post-\/processing to segment optic disc and cup regions from fundus images.
+
+\begin{DoxyAuthor}{Author}
+Rishab Ramesh Nair 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+November 2, 2025 
+\end{DoxyDate}
+
+
+\label{doc-func-members}
+\Hypertarget{_conditional_random_field_8py_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{_conditional_random_field_8py_a2d9c88f375df41c8b4617a1387758861}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!apply\_dense\_crf@{apply\_dense\_crf}}
+\index{apply\_dense\_crf@{apply\_dense\_crf}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{apply\_dense\_crf()}{apply\_dense\_crf()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a2d9c88f375df41c8b4617a1387758861} 
+Conditional\+Random\+Field.\+apply\+\_\+dense\+\_\+crf (\begin{DoxyParamCaption}\item[{}]{image}{, }\item[{}]{probabilities}{, }\item[{}]{n\+\_\+iters}{ = {\ttfamily 5}, }\item[{}]{sxy\+\_\+gaussian}{ = {\ttfamily 3}, }\item[{}]{compat\+\_\+gaussian}{ = {\ttfamily 3}, }\item[{}]{sxy\+\_\+bilateral}{ = {\ttfamily 80}, }\item[{}]{srgb\+\_\+bilateral}{ = {\ttfamily 13}, }\item[{}]{compat\+\_\+bilateral}{ = {\ttfamily 10}}\end{DoxyParamCaption})}
+
+
+
+Apply Dense Conditional Random Field refinement to probability map. 
+
+Refines segmentation predictions using Dense CRF with Gaussian and bilateral pairwise potentials to enforce spatial smoothness and edge-\/aware consistency.
+
+
+\begin{DoxyParams}{Parameters}
+{\em image} & Input RGB image for bilateral filtering. \\
+\hline
+{\em probabilities} & Class probability array of shape (n\+\_\+classes, height, width). \\
+\hline
+{\em n\+\_\+iters} & Number of CRF inference iterations. Default is 5. \\
+\hline
+{\em sxy\+\_\+gaussian} & Gaussian kernel spatial standard deviation. Default is 3. \\
+\hline
+{\em compat\+\_\+gaussian} & Gaussian kernel compatibility weight. Default is 3. \\
+\hline
+{\em sxy\+\_\+bilateral} & Bilateral kernel spatial standard deviation. Default is 80. \\
+\hline
+{\em srgb\+\_\+bilateral} & Bilateral kernel color standard deviation. Default is 13. \\
+\hline
+{\em compat\+\_\+bilateral} & Bilateral kernel compatibility weight. Default is 10.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Refined segmentation map of shape (height, width) with integer class labels.
+\end{DoxyReturn}
+\begin{DoxyVerb}Apply Dense CRF refinement\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a67d036f00b577b8651ff070fefd3ce67}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!calculate\_dice\_coefficient@{calculate\_dice\_coefficient}}
+\index{calculate\_dice\_coefficient@{calculate\_dice\_coefficient}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{calculate\_dice\_coefficient()}{calculate\_dice\_coefficient()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a67d036f00b577b8651ff070fefd3ce67} 
+Conditional\+Random\+Field.\+calculate\+\_\+dice\+\_\+coefficient (\begin{DoxyParamCaption}\item[{}]{pred}{, }\item[{}]{gt}{, }\item[{}]{label}{}\end{DoxyParamCaption})}
+
+
+
+Calculate Dice coefficient for a specific segmentation class. 
+
+Computes the Dice similarity coefficient (F1 score) between predicted and ground truth segmentation for a single class label.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pred} & Predicted segmentation mask. \\
+\hline
+{\em gt} & Ground truth segmentation mask. \\
+\hline
+{\em label} & Class label value to evaluate.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Dice coefficient value in range \mbox{[}0, 1\mbox{]} where 1 is perfect overlap.
+\end{DoxyReturn}
+\begin{DoxyVerb}Calculate Dice coefficient for a specific class\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_ab498834be57df7d11f662a24322f0824}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!evaluate\_segmentation@{evaluate\_segmentation}}
+\index{evaluate\_segmentation@{evaluate\_segmentation}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{evaluate\_segmentation()}{evaluate\_segmentation()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_ab498834be57df7d11f662a24322f0824} 
+Conditional\+Random\+Field.\+evaluate\+\_\+segmentation (\begin{DoxyParamCaption}\item[{}]{pred\+\_\+mask}{, }\item[{}]{gt\+\_\+mask}{}\end{DoxyParamCaption})}
+
+
+
+Evaluate segmentation performance using multiple metrics. 
+
+Computes accuracy and Dice coefficients for all segmentation classes (disc, cup, background) and returns comprehensive evaluation metrics.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pred\+\_\+mask} & Predicted segmentation mask. \\
+\hline
+{\em gt\+\_\+mask} & Ground truth segmentation mask.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Dictionary containing \textquotesingle{}accuracy\textquotesingle{}, \textquotesingle{}dice\+\_\+disc\textquotesingle{}, \textquotesingle{}dice\+\_\+cup\textquotesingle{}, \textquotesingle{}dice\+\_\+background\textquotesingle{}, and \textquotesingle{}dice\+\_\+mean\textquotesingle{} metrics.
+\end{DoxyReturn}
+\begin{DoxyVerb}Evaluate segmentation performance\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a6f27f25b525222640a742d237d33ede2}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!extract\_features\_with\_coords@{extract\_features\_with\_coords}}
+\index{extract\_features\_with\_coords@{extract\_features\_with\_coords}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{extract\_features\_with\_coords()}{extract\_features\_with\_coords()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a6f27f25b525222640a742d237d33ede2} 
+Conditional\+Random\+Field.\+extract\+\_\+features\+\_\+with\+\_\+coords (\begin{DoxyParamCaption}\item[{}]{image}{, }\item[{}]{normalize\+\_\+coords}{ = {\ttfamily True}, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}}\end{DoxyParamCaption})}
+
+
+
+Extract color and spatial features from fundus image. 
+
+Extracts pixel-\/wise features including RGB/\+HSV color information and normalized spatial coordinates for training or prediction.
+
+
+\begin{DoxyParams}{Parameters}
+{\em image} & Input fundus image (BGR format). \\
+\hline
+{\em normalize\+\_\+coords} & If True, normalize coordinates to \mbox{[}0,1\mbox{]} range. Default is True. \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, extract both RGB and HSV features. Default is True.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Feature array of shape (height\texorpdfstring{$\ast$}{*}width, n\+\_\+features) where n\+\_\+features is 8 (RGB + HSV + x + y) or 5 (RGB + x + y) depending on use\+\_\+both\+\_\+colorspaces.
+\end{DoxyReturn}
+\begin{DoxyVerb}Extract color and spatial features from fundus image\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a324acd24da4153440cb43dcc1dc8ac77}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!get\_probability\_map@{get\_probability\_map}}
+\index{get\_probability\_map@{get\_probability\_map}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{get\_probability\_map()}{get\_probability\_map()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a324acd24da4153440cb43dcc1dc8ac77} 
+Conditional\+Random\+Field.\+get\+\_\+probability\+\_\+map (\begin{DoxyParamCaption}\item[{}]{clf}{, }\item[{}]{scaler}{, }\item[{}]{image}{, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}}\end{DoxyParamCaption})}
+
+
+
+Generate probability map from Naive Bayes classifier predictions. 
+
+Computes per-\/pixel class probabilities for all segmentation classes using the trained Naive Bayes classifier.
+
+
+\begin{DoxyParams}{Parameters}
+{\em clf} & Trained Gaussian\+NB classifier. \\
+\hline
+{\em scaler} & Fitted Standard\+Scaler for feature normalization. \\
+\hline
+{\em image} & Input fundus image (BGR format). \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, use both RGB and HSV features. Default is True.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Probability array of shape (n\+\_\+classes, height, width) with values in \mbox{[}0,1\mbox{]}.
+\end{DoxyReturn}
+\begin{DoxyVerb}Get probability map from Naive Bayes classifier\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a68438a408554e185b9b7a52ecaef71df}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!main@{main}}
+\index{main@{main}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a68438a408554e185b9b7a52ecaef71df} 
+Conditional\+Random\+Field.\+main (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Memory-\/efficient main execution pipeline with CRF refinement. 
+
+Executes the complete segmentation pipeline including\+:
+\begin{DoxyItemize}
+\item Loading and preprocessing training data
+\item Training Naive Bayes classifier with batch processing
+\item Testing on validation images
+\item Applying CRF refinement
+\item Computing evaluation metrics
+\item Saving visualizations and metric comparisons
+\end{DoxyItemize}
+
+\begin{DoxyReturn}{Returns}
+None. Saves all outputs to the configured OUTPUT\+\_\+\+DIR.
+\end{DoxyReturn}
+\begin{DoxyVerb}Memory-efficient main execution pipeline with CRF\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a2903e869b8d68470879216bea67cc86f}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!map\_labels\_back@{map\_labels\_back}}
+\index{map\_labels\_back@{map\_labels\_back}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{map\_labels\_back()}{map\_labels\_back()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a2903e869b8d68470879216bea67cc86f} 
+Conditional\+Random\+Field.\+map\+\_\+labels\+\_\+back (\begin{DoxyParamCaption}\item[{}]{crf\+\_\+output}{, }\item[{}]{label\+\_\+mapping}{}\end{DoxyParamCaption})}
+
+
+
+Map CRF integer labels back to original mask values. 
+
+Converts class indices from CRF output back to the original grayscale mask values (0, 128, 255).
+
+
+\begin{DoxyParams}{Parameters}
+{\em crf\+\_\+output} & CRF output with integer class labels. \\
+\hline
+{\em label\+\_\+mapping} & Dictionary mapping integer labels to original mask values.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Final segmentation mask with original label values.
+\end{DoxyReturn}
+\begin{DoxyVerb}Map CRF integer labels back to original mask values\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a3167e00287c33895d35b70e84922028d}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!predict\_with\_crf@{predict\_with\_crf}}
+\index{predict\_with\_crf@{predict\_with\_crf}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{predict\_with\_crf()}{predict\_with\_crf()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a3167e00287c33895d35b70e84922028d} 
+Conditional\+Random\+Field.\+predict\+\_\+with\+\_\+crf (\begin{DoxyParamCaption}\item[{}]{clf}{, }\item[{}]{scaler}{, }\item[{}]{test\+\_\+image}{, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}, }\item[{}]{apply\+\_\+crf}{ = {\ttfamily True}, }\item[{}]{crf\+\_\+params}{ = {\ttfamily None}}\end{DoxyParamCaption})}
+
+
+
+Predict segmentation with optional CRF refinement. 
+
+Generates segmentation predictions using Naive Bayes classifier and optionally applies Dense CRF post-\/processing for refinement.
+
+
+\begin{DoxyParams}{Parameters}
+{\em clf} & Trained Gaussian\+NB classifier. \\
+\hline
+{\em scaler} & Fitted Standard\+Scaler for feature normalization. \\
+\hline
+{\em test\+\_\+image} & Input test fundus image (BGR format). \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, use both RGB and HSV features. Default is True. \\
+\hline
+{\em apply\+\_\+crf} & If True, apply CRF refinement. Default is True. \\
+\hline
+{\em crf\+\_\+params} & Dictionary of CRF parameters. If None, uses default values.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Tuple of (final\+\_\+mask, naive\+\_\+bayes\+\_\+mask) where final\+\_\+mask is the CRF-\/refined result (or Naive Bayes result if apply\+\_\+crf=False) and naive\+\_\+bayes\+\_\+mask is the unrefined classifier output.
+\end{DoxyReturn}
+\begin{DoxyVerb}Predict segmentation with optional CRF refinement\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a1d094533ad75ac987b0d282962501969}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!remap\_mask\_labels@{remap\_mask\_labels}}
+\index{remap\_mask\_labels@{remap\_mask\_labels}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{remap\_mask\_labels()}{remap\_mask\_labels()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a1d094533ad75ac987b0d282962501969} 
+Conditional\+Random\+Field.\+remap\+\_\+mask\+\_\+labels (\begin{DoxyParamCaption}\item[{}]{mask}{}\end{DoxyParamCaption})}
+
+
+
+Remap mask pixel values to standardized label values. 
+
+Converts grayscale mask values to exactly three discrete labels\+: 0 (disc), 128 (cup), and 255 (background) based on intensity thresholds.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mask} & Input grayscale mask with arbitrary intensity values.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Remapped mask with values in \{0, 128, 255\}.
+\end{DoxyReturn}
+\begin{DoxyVerb}Remap mask values to exactly 0, 128, or 255\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_adc1d8d77c54b75c2a925a126b607077a}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!resize\_image@{resize\_image}}
+\index{resize\_image@{resize\_image}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{resize\_image()}{resize\_image()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_adc1d8d77c54b75c2a925a126b607077a} 
+Conditional\+Random\+Field.\+resize\+\_\+image (\begin{DoxyParamCaption}\item[{}]{image}{, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Resize regular fundus image to reduce memory usage. 
+
+Proportionally resizes an image so that its largest dimension does not exceed the specified maximum size while maintaining aspect ratio.
+
+
+\begin{DoxyParams}{Parameters}
+{\em image} & Input image array (BGR format). \\
+\hline
+{\em max\+\_\+size} & Maximum dimension size in pixels. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Resized image or original image if already within size limit.
+\end{DoxyReturn}
+\begin{DoxyVerb}Resize regular image (fundus) to reduce memory usage\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a0416cc086144ca4092d6a99c010fd9e4}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!resize\_mask@{resize\_mask}}
+\index{resize\_mask@{resize\_mask}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{resize\_mask()}{resize\_mask()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a0416cc086144ca4092d6a99c010fd9e4} 
+Conditional\+Random\+Field.\+resize\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{mask}{, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Resize segmentation mask using nearest neighbor interpolation. 
+
+Resizes a mask image while preserving discrete label values by using nearest neighbor interpolation instead of bilinear or bicubic methods.
+
+
+\begin{DoxyParams}{Parameters}
+{\em mask} & Input mask array with discrete labels. \\
+\hline
+{\em max\+\_\+size} & Maximum dimension size in pixels. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Resized mask or original mask if already within size limit.
+\end{DoxyReturn}
+\begin{DoxyVerb}Resize mask using nearest neighbor to preserve discrete labels\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a5e8c036fe43733b614dadb0449a54282}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!save\_comparison\_metrics\_as\_image@{save\_comparison\_metrics\_as\_image}}
+\index{save\_comparison\_metrics\_as\_image@{save\_comparison\_metrics\_as\_image}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{save\_comparison\_metrics\_as\_image()}{save\_comparison\_metrics\_as\_image()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a5e8c036fe43733b614dadb0449a54282} 
+Conditional\+Random\+Field.\+save\+\_\+comparison\+\_\+metrics\+\_\+as\+\_\+image (\begin{DoxyParamCaption}\item[{}]{metrics\+\_\+nb}{, }\item[{}]{metrics\+\_\+crf}{, }\item[{}]{image\+\_\+name}{, }\item[{}]{save\+\_\+path}{}\end{DoxyParamCaption})}
+
+
+
+Save comparison table of Naive Bayes and CRF metrics as image. 
+
+Creates and saves a formatted table comparing segmentation metrics between Naive Bayes and CRF-\/refined predictions for a single test image.
+
+
+\begin{DoxyParams}{Parameters}
+{\em metrics\+\_\+nb} & Dictionary of Naive Bayes metrics. \\
+\hline
+{\em metrics\+\_\+crf} & Dictionary of CRF-\/refined metrics. \\
+\hline
+{\em image\+\_\+name} & Name of the test image. \\
+\hline
+{\em save\+\_\+path} & File path where the metrics comparison image will be saved.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Saves image to disk.
+\end{DoxyReturn}
+\begin{DoxyVerb}Save comparison of Naive Bayes and CRF metrics as an image\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_a5caf19f049bdbe58642688a755b917d9}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!save\_summary\_metrics\_as\_image@{save\_summary\_metrics\_as\_image}}
+\index{save\_summary\_metrics\_as\_image@{save\_summary\_metrics\_as\_image}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{save\_summary\_metrics\_as\_image()}{save\_summary\_metrics\_as\_image()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_a5caf19f049bdbe58642688a755b917d9} 
+Conditional\+Random\+Field.\+save\+\_\+summary\+\_\+metrics\+\_\+as\+\_\+image (\begin{DoxyParamCaption}\item[{}]{metrics\+\_\+nb\+\_\+list}{, }\item[{}]{metrics\+\_\+crf\+\_\+list}{, }\item[{}]{save\+\_\+path}{}\end{DoxyParamCaption})}
+
+
+
+Save overall summary metrics across all test images as table image. 
+
+Computes average metrics across multiple test images and saves a formatted comparison table showing overall performance improvements with CRF.
+
+
+\begin{DoxyParams}{Parameters}
+{\em metrics\+\_\+nb\+\_\+list} & List of Naive Bayes metrics dictionaries for all test images. \\
+\hline
+{\em metrics\+\_\+crf\+\_\+list} & List of CRF metrics dictionaries for all test images. \\
+\hline
+{\em save\+\_\+path} & File path where the summary metrics image will be saved.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Saves image to disk.
+\end{DoxyReturn}
+\begin{DoxyVerb}Save overall summary metrics as a table image\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_ad91469ec729d736aed5cab6ef1720eb1}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!train\_naive\_bayes\_memory\_efficient@{train\_naive\_bayes\_memory\_efficient}}
+\index{train\_naive\_bayes\_memory\_efficient@{train\_naive\_bayes\_memory\_efficient}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{train\_naive\_bayes\_memory\_efficient()}{train\_naive\_bayes\_memory\_efficient()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_ad91469ec729d736aed5cab6ef1720eb1} 
+Conditional\+Random\+Field.\+train\+\_\+naive\+\_\+bayes\+\_\+memory\+\_\+efficient (\begin{DoxyParamCaption}\item[{}]{fundus\+\_\+files}{, }\item[{}]{mask\+\_\+files}{, }\item[{}]{use\+\_\+both\+\_\+colorspaces}{ = {\ttfamily True}, }\item[{}]{batch\+\_\+size}{ = {\ttfamily 5}, }\item[{}]{max\+\_\+size}{ = {\ttfamily 512}}\end{DoxyParamCaption})}
+
+
+
+Train Naive Bayes classifier using batch processing for memory efficiency. 
+
+Trains a Gaussian Naive Bayes classifier on fundus images and their segmentation masks using incremental learning with batch processing to reduce memory usage.
+
+
+\begin{DoxyParams}{Parameters}
+{\em fundus\+\_\+files} & List of file paths to training fundus images. \\
+\hline
+{\em mask\+\_\+files} & List of file paths to corresponding segmentation masks. \\
+\hline
+{\em use\+\_\+both\+\_\+colorspaces} & If True, use both RGB and HSV color spaces. Default is True. \\
+\hline
+{\em batch\+\_\+size} & Number of images to process per batch. Default is 5. \\
+\hline
+{\em max\+\_\+size} & Maximum image dimension for resizing. Default is 512.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Tuple of (trained\+\_\+classifier, fitted\+\_\+scaler) where classifier is Gaussian\+NB and scaler is Standard\+Scaler for feature normalization.
+\end{DoxyReturn}
+\begin{DoxyVerb}Memory-efficient training with batching\end{DoxyVerb}
+ \Hypertarget{_conditional_random_field_8py_ae91a4f328ea5aa10177af626592993ec}\index{ConditionalRandomField.py@{ConditionalRandomField.py}!visualize\_crf\_comparison@{visualize\_crf\_comparison}}
+\index{visualize\_crf\_comparison@{visualize\_crf\_comparison}!ConditionalRandomField.py@{ConditionalRandomField.py}}
+\doxysubsubsection{\texorpdfstring{visualize\_crf\_comparison()}{visualize\_crf\_comparison()}}
+{\footnotesize\ttfamily \label{_conditional_random_field_8py_ae91a4f328ea5aa10177af626592993ec} 
+Conditional\+Random\+Field.\+visualize\+\_\+crf\+\_\+comparison (\begin{DoxyParamCaption}\item[{}]{original}{, }\item[{}]{naive\+\_\+mask}{, }\item[{}]{crf\+\_\+mask}{, }\item[{}]{gt\+\_\+mask}{ = {\ttfamily None}, }\item[{}]{save\+\_\+path}{ = {\ttfamily None}}\end{DoxyParamCaption})}
+
+
+
+Visualize comparison between Naive Bayes and CRF segmentation results. 
+
+Creates a side-\/by-\/side visualization comparing original image, ground truth, Naive Bayes prediction, and CRF-\/refined prediction.
+
+
+\begin{DoxyParams}{Parameters}
+{\em original} & Original fundus image (BGR format). \\
+\hline
+{\em naive\+\_\+mask} & Naive Bayes segmentation mask. \\
+\hline
+{\em crf\+\_\+mask} & CRF-\/refined segmentation mask. \\
+\hline
+{\em gt\+\_\+mask} & Ground truth mask. If None, only shows 3 panels. Default is None. \\
+\hline
+{\em save\+\_\+path} & File path to save visualization. If None, displays instead. Default is None.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None. Either saves or displays the visualization.
+\end{DoxyReturn}
+\begin{DoxyVerb}Visualize comparison between Naive Bayes and CRF refinement\end{DoxyVerb}
+ 

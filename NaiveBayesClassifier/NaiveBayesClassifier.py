@@ -657,11 +657,6 @@ def visualize_results(original, predicted_mask, gt_mask=None, save_path=None):
     # Close figure to free memory
     plt.close(fig)
 
-
-# ============================================================================
-# MAIN PIPELINE
-# ============================================================================
-
 ##
 # @brief Memory-efficient main execution pipeline for optic disc and cup segmentation.
 #
@@ -698,11 +693,6 @@ def main():
     
     # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    # ========== TRAINING ==========
-    print("="*60)
-    print("TRAINING PHASE (MEMORY EFFICIENT)")
-    print("="*60)
     
     # Get training file paths
     fundus_files = sorted(glob(os.path.join(TRAIN_FUNDUS_DIR, '*.*')))[:MAX_TRAIN_IMAGES]
